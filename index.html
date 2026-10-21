@@ -1,0 +1,1574 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dangi Samaj Portal</title>
+<meta name="description" content="दांगी समाज सदस्य पंजीकरण · Dangi community member registration">
+<meta name="theme-color" content="#1c2f6e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Tiro+Devanagari+Hindi&display=swap">
+<style>
+/* Layout: one centred column (1080px) under a deep register-ink header; forms single-column on phones.
+   Palette: register ink blue + marigold, on a cool paper ground. */
+:root {
+  --paper: #f3f5f4;
+  --surface: #ffffff;
+  --sunk: #eaeeec;
+  --ink: #17213a;
+  --muted: #5a6475;
+  --line: #d8dfdc;
+  --primary: #1c2f6e;
+  --primary-ink: #ffffff;
+  --header: #1c2f6e;
+  --header-ink: #eef1fb;
+  --marigold: #d98a0b;
+  --marigold-soft: #fbefd6;
+  --ok: #17734a;   --ok-soft: #dff2e8;
+  --warn: #9a5a00; --warn-soft: #fbedd5;
+  --bad: #b3261e;  --bad-soft: #fbe3e0;
+  --focus: #d98a0b;
+  --font-display: "Tiro Devanagari Hindi", "Noto Serif Devanagari", Georgia, serif;
+  --font-body: "Mukta", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1421; --surface: #171e2e; --sunk: #1d2537; --ink: #e8ecf4; --muted: #9ba5b9; --line: #2b3448;
+    --primary: #9fb3ff; --primary-ink: #0f1421; --header: #131b33; --header-ink: #e8ecf4;
+    --marigold: #f0b44a; --marigold-soft: #3a2c12;
+    --ok: #5fd39a; --ok-soft: #15301f; --warn: #f2b65a; --warn-soft: #36280f; --bad: #ff8a80; --bad-soft: #3b1715; --focus: #f0b44a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1421; --surface: #171e2e; --sunk: #1d2537; --ink: #e8ecf4; --muted: #9ba5b9; --line: #2b3448;
+  --primary: #9fb3ff; --primary-ink: #0f1421; --header: #131b33; --header-ink: #e8ecf4;
+  --marigold: #f0b44a; --marigold-soft: #3a2c12;
+  --ok: #5fd39a; --ok-soft: #15301f; --warn: #f2b65a; --warn-soft: #36280f; --bad: #ff8a80; --bad-soft: #3b1715; --focus: #f0b44a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.55 var(--font-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--header); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.boot, .loading { padding: 48px 16px; text-align: center; color: var(--muted); }
+.mono { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+code { background: var(--sunk); padding: 1px 6px; border-radius: 4px; font-size: .9em; }
+
+/* header */
+.demo-bar { background: var(--marigold-soft); color: var(--warn); font-size: .875rem; padding-block: 6px; }
+.top { background: var(--header); color: var(--header-ink); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+.top-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; background: none; border: 0; color: inherit; cursor: pointer; padding: 0; text-align: left; min-width: 0; }
+.mark { position: relative; width: 34px; height: 34px; flex: none; }
+.mark i { position: absolute; border-radius: 50%; border: 2px solid var(--marigold); inset: 0; }
+.mark i:nth-child(2) { inset: 7px; opacity: .8; }
+.mark i:nth-child(3) { inset: 13px; background: var(--marigold); border: 0; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.brand-text b { font: 400 1.35rem/1.1 var(--font-display); }
+.brand-text small { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-right { display: flex; align-items: center; gap: 12px; }
+.who { display: flex; flex-direction: column; text-align: right; line-height: 1.2; }
+.who b { font-weight: 600; font-size: .875rem; }
+.who small { opacity: .75; font-size: .8rem; }
+.tabs { border-top: 1px solid color-mix(in srgb, var(--header-ink) 14%, transparent); }
+.tabs-in { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.tabs-in::-webkit-scrollbar { display: none; }
+.tab { background: none; border: 0; color: var(--header-ink); opacity: .72; padding: 10px 12px; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; font-weight: 500; }
+.tab:hover { opacity: 1; }
+.tab.on { opacity: 1; border-bottom-color: var(--marigold); }
+
+.main { padding-block: 24px 40px; display: flex; flex-direction: column; gap: 20px; }
+.foot { color: var(--muted); font-size: .8rem; padding-block: 0 32px; }
+
+/* type */
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font: 400 clamp(1.8rem, 5vw, 2.6rem)/1.15 var(--font-display); }
+.h2 { font: 400 1.7rem/1.2 var(--font-display); }
+.h3 { font-size: 1.05rem; font-weight: 600; }
+.eyebrow { margin: 0 0 4px; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--marigold); font-weight: 600; }
+.intro { max-width: 640px; }
+.lede { color: var(--muted); margin: 8px 0 0; max-width: 60ch; }
+
+/* building blocks */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; }
+.card.flush { padding: 0; overflow: hidden; }
+.card.narrow { max-width: 440px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.card.empty { text-align: center; color: var(--muted); }
+.form { display: flex; flex-direction: column; gap: 22px; max-width: 720px; }
+.group { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.group legend { padding: 0; margin-bottom: 10px; font-weight: 600; color: var(--primary); font-size: .95rem; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.span2 { grid-column: span 2; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.loc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > span { font-size: .875rem; font-weight: 500; color: var(--muted); }
+input, select, textarea { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-height: 44px; }
+select:disabled { background: var(--sunk); color: var(--muted); }
+textarea { resize: vertical; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
+.consent { display: flex; gap: 12px; align-items: flex-start; background: var(--marigold-soft); padding: 14px; border-radius: 8px; cursor: pointer; }
+.consent input { width: 22px; height: 22px; min-height: 0; flex: none; margin-top: 3px; accent-color: var(--primary); }
+.consent small { display: block; color: var(--muted); margin-top: 4px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row.end { justify-content: flex-end; }
+.row.center { justify-content: center; }
+.wrap-row { align-items: flex-end; gap: 12px; }
+.grow { flex: 1 1 200px; }
+.head-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.btn:hover { border-color: var(--primary); }
+.btn:disabled { opacity: .6; cursor: progress; }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.big { min-height: 50px; padding: 10px 24px; font-size: 1.05rem; }
+.btn.small { min-height: 34px; padding: 4px 12px; font-size: .875rem; }
+.btn.ghost { background: transparent; }
+.btn.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.on-dark { background: transparent; color: var(--header-ink); border-color: color-mix(in srgb, var(--header-ink) 35%, transparent); }
+.btn.done { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.danger-text { color: var(--bad); }
+.link { background: none; border: 0; padding: 0; color: var(--primary); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+
+.pill { display: inline-block; font-size: .72rem; font-weight: 600; letter-spacing: .03em; padding: 1px 8px; border-radius: 99px; vertical-align: middle; }
+.pill.verified { background: var(--ok-soft); color: var(--ok); }
+.pill.pending { background: var(--warn-soft); color: var(--warn); }
+.pill.rejected { background: var(--bad-soft); color: var(--bad); }
+.pill.role { background: var(--sunk); color: var(--primary); }
+
+.note { padding: 12px 14px; border-radius: 8px; }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.stat span { font-size: .85rem; color: var(--muted); }
+.stat b { font: 600 1.9rem/1.1 var(--font-body); font-variant-numeric: tabular-nums; }
+.stat b small { font-size: .9rem; font-weight: 500; color: var(--muted); }
+.stat.ok b { color: var(--ok); }
+.stat.warn b { color: var(--warn); }
+.stat .link { align-self: flex-start; font-size: .85rem; }
+
+/* tables */
+.table-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tbl-wrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { text-align: left; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 10px 16px; background: var(--sunk); }
+.tbl td { padding: 11px 16px; border-top: 1px solid var(--line); vertical-align: middle; }
+.tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tbl td.end { text-align: right; white-space: nowrap; }
+.drill tbody tr { cursor: pointer; }
+.drill tbody tr:hover { background: var(--sunk); }
+.drill tr.zero td { color: var(--muted); }
+.bar-col { width: 34%; }
+.bar { position: relative; display: block; height: 10px; border-radius: 99px; background: var(--sunk); overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--marigold) 45%, transparent); border-radius: 99px; }
+.bar i.v { background: var(--primary); }
+
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .9rem; color: var(--muted); }
+.crumbs button { background: none; border: 0; padding: 0; color: var(--primary); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.crumbs i { font-style: normal; opacity: .6; }
+.crumbs span { color: var(--ink); font-weight: 600; }
+
+/* member list */
+.mlist { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.mrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px 20px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
+.mrow:first-child { border-top: 0; }
+.m-name { font-weight: 600; font-size: 1.02rem; }
+.m-sub, .m-place { font-size: .875rem; color: var(--muted); }
+.m-place { color: var(--primary); }
+.m-phone { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.m-act { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+.filters { display: flex; flex-direction: column; gap: 14px; }
+
+/* messaging */
+.msg-sum { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.msg-sum b { font: 600 2.2rem/1 var(--font-body); color: var(--primary); font-variant-numeric: tabular-nums; }
+.actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 18px; }
+.act-card { background: var(--sunk); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.act-card h3 { font-size: 1rem; font-weight: 600; }
+.act-card p { margin: 0; font-size: .875rem; color: var(--muted); flex: 1; }
+.queue { list-style: none; margin: 0; padding: 0; max-height: 480px; overflow-y: auto; }
+.queue li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line); }
+.queue li:first-child { border-top: 0; }
+.queue span { display: flex; flex-direction: column; min-width: 0; }
+.queue small { color: var(--muted); }
+
+/* locations */
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.chips button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.chips button:disabled { cursor: default; opacity: 1; }
+.chips small { color: var(--muted); }
+
+/* success, login, misc */
+.success { text-align: center; max-width: 560px; margin: 24px auto; display: flex; flex-direction: column; gap: 10px; align-items: center; padding-block: 32px; }
+.success p { color: var(--muted); margin: 0 0 8px; }
+.tick { width: 64px; height: 64px; border-radius: 50%; background: var(--ok-soft); position: relative; }
+.tick::after { content: ""; position: absolute; left: 22px; top: 14px; width: 14px; height: 28px; border: solid var(--ok); border-width: 0 4px 4px 0; transform: rotate(45deg); }
+.demo-logins { border-top: 1px dashed var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.demo-logins p { margin: 0; font-size: .875rem; }
+.error-card { border-color: var(--bad); }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 12px 18px; border-radius: 8px; z-index: 50; max-width: min(92vw, 520px); box-shadow: 0 8px 24px rgb(0 0 0 / .2); transition: opacity .4s, transform .4s; }
+.toast.bad { background: var(--bad); color: #fff; }
+.toast.warn { background: var(--warn); color: #fff; }
+.toast.out { opacity: 0; transform: translate(-50%, 8px); }
+.modal-back { position: fixed; inset: 0; background: rgb(10 14 25 / .5); display: grid; place-items: center; z-index: 40; padding: 16px; }
+.modal { background: var(--surface); border-radius: var(--r); padding: 20px; max-width: 440px; width: 100%; display: flex; flex-direction: column; gap: 14px; }
+.modal p { margin: 0; }
+
+@media (max-width: 640px) {
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+  .span2 { grid-column: auto; }
+  .hide-sm { display: none; }
+  .bar-col { width: 30%; }
+  .mrow { grid-template-columns: minmax(0, 1fr) auto; }
+  .m-act { grid-column: 1 / -1; justify-content: flex-start; }
+  .who small { display: none; }
+  .who { max-width: 110px; }
+  .brand-text small { display: none; }
+  .card { padding: 16px; }
+  .form .row.end .btn.big { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* Gaya update: subdivision groups, village coverage */
+.tbl tr.grp td { background: var(--marigold-soft); color: var(--warn); font-weight: 600; font-size: .85rem; letter-spacing: .02em; padding-block: 7px; }
+.tbl tr.grp td span { float: right; font-weight: 500; color: var(--muted); }
+.tbl td small { color: var(--muted); }
+.drill tr.grp { cursor: default; }
+.drill tr.grp:hover { background: none; }
+.sub { margin: 2px 0 0; }
+.meter { display: block; height: 6px; border-radius: 99px; background: var(--sunk); overflow: hidden; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: var(--marigold); border-radius: 99px; }
+.hint { margin: -4px 0 0; font-size: .875rem; color: var(--muted); background: var(--sunk); padding: 8px 12px; border-radius: 8px; }
+.hint b { color: var(--ink); font-weight: 600; }
+optgroup { font-style: normal; font-weight: 600; }
+
+/* booths */
+.pill.booth { background: var(--sunk); color: var(--primary); font-variant-numeric: tabular-nums; }
+.seg { display: inline-flex; align-self: flex-start; background: var(--sunk); border-radius: 8px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--primary); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.tbl.booths td:nth-child(2) { min-width: 200px; }
+.tbl.booths td.num.mono { color: var(--muted); width: 48px; }
+.booth-list { list-style: none; margin: 0; padding: 0; columns: 2 280px; column-gap: 24px; font-size: .9rem; }
+.booth-list li { break-inside: avoid; padding: 5px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; }
+.booth-list b { font-variant-numeric: tabular-nums; color: var(--primary); min-width: 32px; }
+.note.ok-note { background: var(--ok-soft); color: var(--ink); font-size: .9rem; }
+
+</style>
+</head>
+<body>
+<div id="app"><div class="boot">दांगी समाज · Loading…</div></div>
+<script>
+/* =====================================================================
+   SETTINGS — the only file you need to edit.
+   Leave SUPABASE_URL empty to run the app in DEMO mode (sample data).
+   Paste your values from Supabase → Project Settings → API (see README).
+   ===================================================================== */
+window.APP_CONFIG = {
+  APP_NAME: 'दांगी समाज',            // shown in the header (Hindi)
+  APP_NAME_EN: 'Dangi Samaj Portal',  // shown under it (English)
+
+  SUPABASE_URL: 'https://fioqdttoqaevcnhqzwly.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpb3FkdHRvcWFldmNuaHF6d2x5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MDAyODUsImV4cCI6MjEwODE3NjI4NX0.lPNysdWlpgRcBdwVdWz2b0Q73uGBHI9WtDJbDgLGWEM',  // "anon public" key: safe in the app, the database rules protect the data
+
+  DEFAULT_STATE: 'Bihar',             // pre-selected on the registration form
+  DEFAULT_DISTRICT: 'Gaya',           // pre-selected too (people can still change it)
+  COUNTRY_CODE: '91'                  // used for WhatsApp links and contact export
+};
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* Gaya district: blocks, subdivisions and gram panchayats (used by demo mode only). */
+window.GAYA_DATA = {"Amas":{"s":"Sherghati","p":[["Akouna",9],["Amas",11],["Badki Chilmi",13],["Jhari",11],["Kalwan",12],["Karamdih",13],["Mahuawan",10],["Rampur",9],["Sawnkala",14]]},"Atri":{"s":"Neemchak Bathani","p":[["Chakra",7],["Dhusri",16],["Dihuri",4],["Jiri",9],["Narawat",7],["Sahora",9],["Sirh",6],["Tetua",5]]},"Banke Bazar":{"s":"Sherghati","p":[["Baital",9],["Barheta",12],["Bihargain",7],["Goitha",3],["Lutua",13],["Pananiya",6],["Parsawan Khurd",9],["Roshan Ganj",15],["Saif Ganj",7],["Tarwan",6],["Tilaiya",13]]},"Barachatti":{"s":"Sherghati","p":[["Bajarkar",16],["Bara",3],["Bhalua",18],["Bibi Pesra",14],["Binda",12],["Bumer",13],["Diwaniyan",6],["Jaigir",9],["Jhajh",8],["Kahudag",8],["Patluka",28],["Rohi",14],["Sarwan",9]]},"Belaganj":{"s":"Gaya Sadar","p":[["Agandha",6],["Akthu Kachanpur",6],["Bajitpur",6],["Belaganj",4],["Belhadi",7],["Bhalua-I",10],["Bhalua-II",7],["Chiraila",4],["Irki",9],["Khaneta",9],["Koriyawan",4],["Kormathu",7],["Lakshmipur",6],["Lodipur",5],["Paibigha",2],["Panari",8],["Rauna",5],["Sakir Bigha",9],["Sri Pur",5]]},"Bodh Gaya":{"s":"Gaya Sadar","p":[["Atiya",4],["Bara",9],["Basarhi",6],["Gapha Khurd",6],["Ilara",12],["Itara",7],["Jhikatiya",10],["Kanhaul",16],["Kurmawan",6],["Mocharim",4],["Mora Mardana",10],["Mora Tal",5],["Nawan",7],["Shekhwara",10]]},"Dobhi":{"s":"Sherghati","p":[["Angra",4],["Bajaura",5],["Bari",12],["Ghora Ghat",13],["Kharanti",14],["Kurmawan",7],["Kusha Bija",11],["Nadarpur",11],["Nawadih",11],["Neema",12],["Pacharatan",9],["Patti",14]]},"Dumaria":{"s":"Sherghati","p":[["Bhangia",17],["Bhokaha",14],["Chhakarbandha",7],["Kachar",14],["Kolhu Bar",10],["Mahuri",12],["Manjhauli",7],["Nandai",10],["Narayan Pur",8],["Pankara",15],["Sewra",10]]},"Fatehpur":{"s":"Gaya Sadar","p":[["Bara",12],["Bhare",6],["Charokhari",17],["Dharhara Kala",9],["Dumari Chati",8],["Jaipur",10],["Kathautiya Kewal",10],["Lodhwe North",7],["Lodhwe South",2],["Mataso",10],["Meyari",6],["Morhe",13],["Nagawa",7],["Naudiha Jhurang",20],["Naudiha Sultanpur",9],["Neemi",13],["Pahar Pur",9],["Salaiya Kala",9]]},"Gaya Sadar":{"s":"Gaya Sadar","p":[["Amraha",10],["Aurawan",5],["Bara",5],["Chakand",6],["Churi",5],["Dhansir",10],["Ghuthia",14],["Kandi",6],["Kesaru Dharmpur",8],["Khiriyawan",2],["Korwan",11],["Kujap",5],["Kujapi",2],["Madan Bigha",6],["Naili",8],["Rasalpur",6]]},"Guraru":{"s":"Tekari","p":[["Barorah",5],["Daboor",5],["Deokali",7],["Diha",11],["Ghatera",6],["Gudru",7],["Kanausi",8],["Konchi",7],["Malpa",9],["Pahra",5],["Rauna",6],["Tilori",5]]},"Gurua":{"s":"Sherghati","p":[["Barma",13],["Belauti",11],["Chilor",16],["Dubba",18],["Guneri",9],["Gurua",11],["Kaj",10],["Kolauna",13],["Manda",7],["Nadaura",10],["Nagwan",7],["Pakri",12],["Paluhara",16],["Raghunath Khap",11],["Rajan",7],["Simaru",13]]},"Imamganj":{"s":"Sherghati","p":[["Bikopur",20],["Biraj",19],["Chhakar Bandha",15],["Chua Bar",9],["Dubahal",7],["Jhikatiya",16],["Kujesar",10],["Lawabar",11],["Malhari",5],["Manjhauli",7],["Nagwan",15],["Naudiha",18],["Pakriguria",7],["Salaiya",7],["Sidhpur",20]]},"Khizarsarai":{"s":"Neemchak Bathani","p":[["Aima",6],["Bihta",7],["Chiraili",5],["Hathiyawan",4],["Hemara",8],["Horma",5],["Jamuawan",12],["Kurwa",9],["Kutlupur",6],["Naudiha",15],["Rauniya",7],["Sarbahda",9],["Siswar",10],["Uchouli",6]]},"Konch":{"s":"Tekari","p":[["Adai",4],["Anti",5],["Aslempur",8],["Chabura",10],["Garari",7],["Gauharpur",8],["Kabar",8],["Ker",7],["Khajuri",7],["Konch",5],["Korap",9],["Kurmawan",7],["Manjhiyawan",10],["Parsawan",10],["Simra",6],["Srigawan",14],["Tineri",11],["Utren",5]]},"Manpur":{"s":"Gaya Sadar","p":[["Bara Gandhar",4],["Bhadeja",5],["Bhore",10],["Gere",6],["Kaiya",8],["Lakhan Pur",8],["Nanauk",9],["Nauranga",3],["Shadi Pur",5],["Sohai Pur",9],["Sonaut",6],["Usari",5]]},"Mohanpur":{"s":"Sherghati","p":[["Ambatari",7],["Amkola",16],["Bagula",10],["Bumuar",14],["Dema",7],["Dharhara",21],["Erki",12],["Gopal Kera",16],["Guriyawan",3],["Kewala",13],["Khardih",24],["Ladu",12],["Lakhaipur",12],["Matihani",22],["Musaila",10],["Sinduar",9],["Siriyawan",9],["Teswar",15]]},"Mohra":{"s":"Neemchak Bathani","p":[["Arai",8],["Dariyapur",9],["Gehlor",17],["Jethian",3],["North Kajoor",1],["Sarsu",3],["Sewtar",6],["South Kajoor",1],["Tetar",7]]},"Neemchak Bathani":{"s":"Neemchak Bathani","p":[["Bathani",5],["Khukhri",6],["Mai",5],["Maniyara",6],["Naili",7],["Saren",6],["Singhaul",4],["Telari",3]]},"Paraiya":{"s":"Tekari","p":[["Ajmat Ganj",14],["Bagahi",9],["Kapasia",12],["Karhatta",8],["Mangarawan",9],["Manjhiawan",9],["Paraiya Khurd",9],["Puna Kala",11],["Solara",4]]},"Sherghati":{"s":"Sherghati","p":[["Bar",7],["Bela",11],["Chanpi",11],["Cherki",9],["Chetab Kalan",7],["Dhab Chiraiya",14],["Gopalpur",7],["Kachauri",12],["Sri Ram Pur",8]]},"Tankuppa":{"s":"Gaya Sadar","p":[["Aropur",14],["Bahsapipra",8],["Barsauna",6],["Bhetaura",14],["Chaubar",12],["Dhibar",14],["Gajadharpur",12],["Jagarnathpur",7],["Tankuppa",5],["Utali Bara",13]]},"Tekari":{"s":"Tekari","p":[["Ammakuan",7],["Bhori",4],["Chaita",8],["Chhathawan",8],["Dighaura",7],["Dihura",9],["Jalalpur",4],["Kespa",10],["Khanetu",7],["Law",6],["Mahmanna",6],["Makhdumpur",12],["Mau",4],["Musi",1],["Nepa",4],["Noni",8],["Paluhar",7],["Pura",8],["Rupas Pur",8],["Sanda",14],["Shiv Nagar",7],["Simuara",3]]},"Wazirganj":{"s":"Gaya Sadar","p":[["Amethi",7],["Bichchha",6],["Bishun Pur",13],["Ghuriyawan",12],["Jamuawan",2],["Karisowa",8],["Karjara",12],["Kenar Fatehpur",8],["Kenar Paharpur",7],["Kurkihar",5],["Mahugain",12],["Mahuyet",6],["Nawada",11],["Pater Mangrawa",8],["Pura",7],["Sahiya",11],["Tarawan",8]]}};
+
+</script>
+<script>
+/* 227-Imamganj Vidhan Sabha polling booths: [number, name, block, panchayat] (used by demo mode only). */
+window.BOOTH_DATA = { assembly: "227-Imamganj", booths: [[1,"Madhya Vidyalay, Hurmeth","Dumaria","Kachar"],[2,"Madhya Vidyalay, Sildiliya","Dumaria","Kachar"],[3,"Madhya Vidyalay, Ambabar","Dumaria","Kachar"],[4,"Madhya Vidyalay, Khardag (Bayan Bhaag)","Dumaria","Kachar"],[5,"Madhya Vidyalay, Khardag (Dayan Bhaag)","Dumaria","Kachar"],[6,"Madhya Vidyalay, Kachar (Purvi Bhag)","Dumaria","Kachar"],[7,"Madhya Vidyalay, Kachar (Madhya Bhaag)","Dumaria","Kachar"],[8,"Madhya Vidyalay, Kachar (Paschmi Bhag)","Dumaria","Kachar"],[9,"Madhya Vidyalay, Gotibandh","Dumaria","Kachar"],[10,"Prathmik Vidyalay, Devri","Dumaria","Kachar"],[11,"Prathmik Vidyalay, Anarban Salaiya","Dumaria","Chhakarbandha"],[12,"Urdu Utkramit Madhya Vidyalay, Chhakarbandha (Purvi Bhag)","Dumaria","Chhakarbandha"],[13,"Madhya Vidyalay, Pichuliya","Dumaria","Chhakarbandha"],[14,"Urdu Utkramit Madhya Vidyalay, Chhakarbandha (Paschmi Bhag)","Dumaria","Chhakarbandha"],[15,"Prathamik Vidyalay, Tarchuwa","Dumaria","Chhakarbandha"],[16,"Madhya Vidyalay, Barha (Bayaan Bhaag)","Dumaria","Chhakarbandha"],[17,"Madhya Vidyalay, Barha (Dayan Bhaag)","Dumaria","Chhakarbandha"],[18,"Samudayik Vikas Bhawan, Sevra (Purvi Bhag)","Dumaria","Sewra"],[19,"Samudayik Vikas Bhawan, Sevra (Paschmi Bhag)","Dumaria","Sewra"],[20,"Madhya Vidyalay, Naghari","Dumaria","Sewra"],[21,"Madhya Vidyalay, Kasiyadih (Dayan Bhag)","Dumaria","Sewra"],[22,"Madhya Vidyalay, Kasiyadih (Bayan Bhag)","Dumaria","Sewra"],[23,"Madhya Vidyalay, Fulwariya","Dumaria","Sewra"],[24,"Madhya Vidyalay, Chandriya","Dumaria","Sewra"],[25,"Urdu Prathmik Vidyalay, Bikuakala (Bayaan Bhaag)","Dumaria","Sewra"],[26,"Urdu Prathmik Vidyalaya, Bikuakala (Dayan Bhaag)","Dumaria","Sewra"],[27,"Madhya Vidyalay, Maigra","Dumaria","Sewra"],[28,"Uchch Vidyalay, Maigra","Dumaria","Sewra"],[29,"Madhya Vidyalay, Siddhpur Awasthist Shivnagar (Bayaan Bhaag)","Dumaria","Kolhu Bar"],[30,"Madhya Vidyalay, Siddhpur Awasthit Shiv Nagar (Dayan Bhaag)","Dumaria","Kolhu Bar"],[31,"Prathmik Vidyalay, Karhani","Dumaria","Kolhu Bar"],[32,"Madhya Vidyalay, Kolhuwar (Bayaan Bhaag)","Dumaria","Kolhu Bar"],[33,"Madhya Vidyalay, Kolhuwar (Dayaan Bhaag)","Dumaria","Kolhu Bar"],[34,"Urdu Prathmik Vidyalay, Kolhuwar","Dumaria","Kolhu Bar"],[35,"Madhya Vidyalay, Salaiya","Dumaria","Kolhu Bar"],[36,"Prathmik Vidyalay, Mataha (Purvi Bhag)","Dumaria","Kolhu Bar"],[37,"Prathmik Vidyalay, Mataha (Madhya Bhaag)","Dumaria","Kolhu Bar"],[38,"Prathmik Vidyalay, Mataha (Paschmi Bhag)","Dumaria","Kolhu Bar"],[39,"Madhya Vidyalay, Pipra","Dumaria","Kolhu Bar"],[40,"Project Kanya Uchch Vidyalay, Dumriya (Sthit Manjhauli)","Dumaria","Manjhauli"],[41,"Prathmik Vidyalay Chatakpur (Uttari Bhag)","Dumaria","Manjhauli"],[42,"Madhya Vidyalay Tekrakhurd","Dumaria","Manjhauli"],[43,"Prathmik Vidyalay Chatakpur (Dakshini Bhag)","Dumaria","Manjhauli"],[44,"Kanya Prathmik Vidyalay, Manjhauli","Dumaria","Manjhauli"],[45,"Urdu Prathmik Vidyalay, Salaiya (Purvi Bhag)","Dumaria","Manjhauli"],[46,"Navsrijit Prathmik Vidyalay Salaiya","Dumaria","Manjhauli"],[47,"Urdu Prathmik Vidyalay Salaiya (Paschmi Bhag)","Dumaria","Manjhauli"],[48,"Urdu Madhya Vidyalay, Khaira","Dumaria","Manjhauli"],[49,"Urdu Madhya Vidyalay, Aadarchk (Bayaan Bhaag)","Dumaria","Manjhauli"],[50,"Urdu Madhya Vidyalay, Aadarchak (Dayaan Bhaag)","Dumaria","Manjhauli"],[51,"Prathmik Vidyalay, Sujji Khurd","Dumaria","Pankara"],[52,"Prathmik Vidyalay, Racheya","Dumaria","Pankara"],[53,"Madhya Vidyalay, Dumriya","Dumaria","Pankara"],[54,"Prathmik Vidyalay, Patkhauliya","Dumaria","Pankara"],[55,"Urdu Madhya Vidyalay, Purkhanchak","Dumaria","Pankara"],[56,"Madhya Vidyalay, Basdiha (Bayaan Bhaag)","Dumaria","Pankara"],[57,"Madhya Vidyalay, Basdiha (Dayan Bhaag)","Dumaria","Pankara"],[58,"Kanya Prathmik Vidyalay Pankara (Uttari Bhag)","Dumaria","Pankara"],[59,"Kanya Prathmik Vidyalay Pankara (Dakshini Bhag)","Dumaria","Pankara"],[60,"Madhya Vidyalay, Panchrukhiya Simri (Bayaan Bhaag)","Dumaria","Pankara"],[61,"Madhya Vidyalay, Panchrukhiya Simri (Dayan Bhaag)","Dumaria","Pankara"],[62,"Kanya Madhya Vidyalay, Mahudi (Bayan Bhag)","Dumaria","Mahuri"],[63,"Kanya Madhya Vidyalay, Mahudi (Dayan Bhag)","Dumaria","Mahuri"],[64,"Urdu Madhya Vidyalay, Madarpur (Bayaan Bhaag)","Dumaria","Mahuri"],[65,"Urdu Madhya Vidyalay, Madarpur (Dayaan Bhaag)","Dumaria","Mahuri"],[66,"Prathmik Vidyalay, Barwadih","Dumaria","Mahuri"],[67,"Janta Uchch Vidyalay Dumariya (Isthit Kusadi)","Dumaria","Mahuri"],[68,"Prathmik Vidyalay, Tekrakala","Dumaria","Mahuri"],[69,"Madhya Vidyalay, Pokharpur(Bayaan Bhaag)","Dumaria","Mahuri"],[70,"Madhya Vidyalay, Pokharpur (Dayaan Bhaag)","Dumaria","Mahuri"],[71,"Prathmik Vidyalay Bodhi Bigaha","Dumaria","Mahuri"],[72,"Madhya Vidyalay, Kabisa","Dumaria","Bhangia"],[73,"Madhya Vidyalay, Dibhka","Dumaria","Bhangia"],[74,"Madhya Vidyalay, Balia","Dumaria","Bhangia"],[75,"Prathmik Vidyalay, Karma","Dumaria","Bhangia"],[76,"Madhya Vidyalay, Kolsaita","Dumaria","Bhangia"],[77,"Madhya Vidyalay, Kundiya","Dumaria","Bhangia"],[78,"Madhya Vidyalay Bhangiya (Uttari Bhag)","Dumaria","Bhangia"],[79,"Madhya Vidyalay, Bhangiya (Dakshini Bhag)","Dumaria","Bhangia"],[80,"Prathmik Vidyalay, Rajwaliya","Dumaria","Bhangia"],[81,"Madhya Vidyalaya, Pathra","Dumaria","Bhangia"],[82,"Madhya Vidyalay, Kevlakala","Dumaria","Bhangia"],[83,"Madhya Vidyalay Chotki Kevlakala","Dumaria","Bhangia"],[84,"Prathmik Vidyalay, Nonisot","Dumaria","Bhangia"],[85,"Madhya Vidyalay, Dhavkala","Dumaria","Bhokaha"],[86,"Madhya Vidyalay, Tandwa","Dumaria","Bhokaha"],[87,"Prathmik Vidyalay, Jhangat","Dumaria","Bhokaha"],[88,"Madhya Vidyalay Bhokha (Dayan Bhag)","Dumaria","Bhokaha"],[89,"Madhya Vidyalay Bhokha (Bayan Bhag)","Dumaria","Bhokaha"],[90,"Madhya Vidyalay Chahra Pahra","Dumaria","Bhokaha"],[91,"Madhya Vidyalay, Gansa","Dumaria","Bhokaha"],[92,"Madhya Vidyalay, Bhadwar (Bayaan Bhaag)","Dumaria","Bhokaha"],[93,"Madhya Vidyalay, Bhadwar (Dayan Bhaag)","Dumaria","Bhokaha"],[94,"Madhya Vidyalay, Navigarh","Dumaria","Bhokaha"],[95,"Madhya Vidyalaya, Barwadih (Bayaan Bhaag)","Dumaria","Nandai"],[96,"Madhya Vidyalay, Barwadih (Dayaan Bhaag)","Dumaria","Nandai"],[97,"Madhya Vidyalay, Vijua (Dayan Bhag)","Dumaria","Nandai"],[98,"Madhya Vidyalay, Vijua (Bayan Bhag)","Dumaria","Nandai"],[99,"Prathmik Vidyalay, Nandai","Dumaria","Nandai"],[100,"Kisan Uchch Vidyalay, Shivnagar Nandai Tola Devchandih","Dumaria","Nandai"],[101,"Prathmik Vidyalay, Londa","Dumaria","Nandai"],[102,"Prathmik Vidyalay, Veninagar","Dumaria","Nandai"],[103,"Prathmik Vidyalay, Vishunpur","Dumaria","Nandai"],[104,"Madhya Vidyalay, Ramdohar","Dumaria","Nandai"],[105,"Madhya Vidyalay, Jagatpur","Dumaria","Nandai"],[106,"Madhya Vidyalaya, Narayanpur (Bayan Bhag) Isthit Simri","Dumaria","Narayan Pur"],[107,"Madhya Vidyalaya, Narayanpur (Dayan Bhag) Sthit Simri","Dumaria","Narayan Pur"],[108,"Madhya Vidyalay, Narayanpur (Madhya Bhag) Sthit Simri","Dumaria","Narayan Pur"],[109,"Madhya Vidyalay, Piparwar (Bayaan Bhaag)","Dumaria","Narayan Pur"],[110,"Madhya Vidyalay, Piparwar (Dayaan Bhaag)","Dumaria","Narayan Pur"],[111,"Kanya Madhya Vidyalay, Rampur","Dumaria","Narayan Pur"],[112,"Madhya Vidyalay, Chonha","Dumaria","Narayan Pur"],[113,"Prathimik Vidyalaya, Nayakadih","Dumaria","Narayan Pur"],[114,"Madhya Vidyalay Harni (Purvi Bhag)","Dumaria","Narayan Pur"],[115,"Madhya Vidyalay Harni (Paschmi Bhag)","Dumaria","Narayan Pur"],[116,"Prathmik Vidyalay, Malhari (Dakshini Bhag)","Imamganj","Malhari"],[117,"Utkrimit Uchch Vidyalay Malhari","Imamganj","Malhari"],[118,"Prathmik Vidyalay, Malhari (Uttari Bhag)","Imamganj","Malhari"],[119,"Anganwadi Kendra, Malhari","Imamganj","Malhari"],[120,"Samudayik Vikas Bhawan, Malhari","Imamganj","Malhari"],[121,"Madhya Vidyalay Vishrampur (Dayan Bhag)","Imamganj","Malhari"],[122,"Madhya Vidyalay Vishrampur (Bayan Bhag)","Imamganj","Malhari"],[123,"Madhya Vidyalay, Fatehpur (Dayan Bhag)","Imamganj","Malhari"],[124,"Madhya Vidyalay, Fatehpur (Bayan Bhag)","Imamganj","Malhari"],[125,"Prathmik Vidyalay, Visun Vigha","Imamganj","Pakriguria"],[126,"Prathmik Vidyalay, Pakuri Guriya","Imamganj","Pakriguria"],[127,"Gayan Bharti Uchch Vidyalay Jaglal Nagar Pakri Guriya (Poorvi Bhaag)","Imamganj","Pakriguria"],[128,"Gyan Bharti Uchh Vidyalay Jaglal Nagar Pakriguriya (Paschhim Bhaag)","Imamganj","Pakriguria"],[129,"Madhya Vidyalay Pakardih (Bayan Bhag)","Imamganj","Pakriguria"],[130,"Madhya Vidyalay, Pakardih (Poorvi Bhaag)","Imamganj","Pakriguria"],[131,"Madhya Vidyalay Pakardih (Dayan Bhag)","Imamganj","Pakriguria"],[132,"Madhya Vidyalay, Pakardih (Paschhim Bhaag)","Imamganj","Pakriguria"],[133,"Prathmik Vidyalay, Imliyadih","Imamganj","Pakriguria"],[134,"Madhya Vidyalay, Madsari","Imamganj","Pakriguria"],[135,"Samudayik Vikas Bhawan, Pokhra","Imamganj","Pakriguria"],[136,"Prathmik Vidyalay Pathra (Uttari Bhag)","Imamganj","Imamganj Nagar Panchayat"],[137,"Prathmik Vidyalay, Pathra (Dakshini Bhag)","Imamganj","Imamganj Nagar Panchayat"],[138,"Project Kanya Uchch Vidyalay Imamganj (Bayan Bhag)","Imamganj","Imamganj Nagar Panchayat"],[139,"Project Kanya Uchch Vidyalay Imamganj (Purvi Bhag)","Imamganj","Imamganj Nagar Panchayat"],[140,"Project Kanya Uchch Vidyalay Imamganj (Dayan Bhag)","Imamganj","Imamganj Nagar Panchayat"],[141,"Kalyan Grane Gola, Paseva (Dayan Bhaag)","Imamganj","Imamganj Nagar Panchayat"],[142,"Kalyan Grane Gola, Paseva (Bayaan Bhaag)","Imamganj","Imamganj Nagar Panchayat"],[143,"Samudayik Bhawan, Babhandih (Dayan Bhaaag)","Imamganj","Imamganj Nagar Panchayat"],[144,"Samudayik Bhawan, Babhandih (Bayan Bhaag)","Imamganj","Imamganj Nagar Panchayat"],[145,"Anganwadi Kendra, Babhandih","Imamganj","Imamganj Nagar Panchayat"],[146,"Madhya Vidyalay, Babhandih","Imamganj","Imamganj Nagar Panchayat"],[147,"Prathmik Vidyalay, Bhaghar","Imamganj","Imamganj Nagar Panchayat"],[148,"Utkarmit Madhya Vidyalay, Siddhpur","Imamganj","Sidhpur"],[149,"Samudayik Vikas Bhawan, Tetariya","Imamganj","Sidhpur"],[150,"Urdu Prathmik Vidyalay, Samsawad","Imamganj","Sidhpur"],[151,"Utkrimit Uchch Vidyalay Baseta (Dayan Bhaag)","Imamganj","Sidhpur"],[152,"Utkramit Uchh Vidyalaya, Baseta (Bayan Bhaag)","Imamganj","Sidhpur"],[153,"Samudayik Vikas Bhawan, Gangati","Imamganj","Sidhpur"],[154,"Samudayik Vikas Bhawan, Koyriaya Nima","Imamganj","Sidhpur"],[155,"Prathmik Vidyalay, Nima","Imamganj","Sidhpur"],[156,"Utkramit Madhya Vidyalaya, Kosumha","Imamganj","Sidhpur"],[157,"Prathmik Vidyalay, Yamuna","Imamganj","Sidhpur"],[158,"Utkramit Madhya Vidyalay, Bataspur","Imamganj","Sidhpur"],[159,"Prathmik Vidyalay, Roungha","Imamganj","Sidhpur"],[160,"Prathmik Vidyalay, Akauni","Imamganj","Sidhpur"],[161,"Urdu Madhya Vidyalay Kuiwar (Uttari Bhag)","Imamganj","Dubahal"],[162,"Urdu Madhya Vidyalay, Kuiwar (Dakshini Bhag)","Imamganj","Dubahal"],[163,"Prathmik Vidyalay Devjara","Imamganj","Dubahal"],[164,"Utkramit Uchch Vidyalay, Karasan Kala (Dayan Bhag)","Imamganj","Dubahal"],[165,"Utkramit Uchh Vidyalay, Karasan kala (Bayan Bhaag)","Imamganj","Dubahal"],[166,"Madhya Vidyalay Chhotka Karasan (Bayan Bhag)","Imamganj","Dubahal"],[167,"Madhya Vidyalay Chhotka Karasan (Dayan Bhag)","Imamganj","Dubahal"],[168,"Urdu Madhya Vidyalay Dubhal (Uttari Bhag)","Imamganj","Dubahal"],[169,"Urdu Madhya Vidyalay, Dubhal (Dakshini Bhag)","Imamganj","Dubahal"],[170,"Urdu Madhya Vidyalay, Dubhal (Bayan Bhag)","Imamganj","Dubahal"],[171,"Prathmik Vidyalay, Patail","Imamganj","Dubahal"],[172,"Prathmik Vidyalay, Maira (Dayan Bhaag)","Imamganj","Jhikatiya"],[173,"Prathmik Vidyalay, Maira (Bayan Bhaag)","Imamganj","Jhikatiya"],[174,"Utkrimit Uchch Vidyalay Jhiktiyakala (Dayan Bhag)","Imamganj","Jhikatiya"],[175,"Utkramit Uchch Vidyalaya, Jhikatiyakala (Bayan Bhag)","Imamganj","Jhikatiya"],[176,"Prathmik Vidyalay, Karmaun","Imamganj","Jhikatiya"],[177,"Prathmik Vidyalay, Vengadohar","Imamganj","Jhikatiya"],[178,"Madhya Vidyalay, Tanakwar","Imamganj","Jhikatiya"],[179,"Anganwadi Kendra, Badhaikhap","Imamganj","Jhikatiya"],[180,"Madhya Vidyalay Bagewar Ekamba (Purvi Bhag)","Imamganj","Jhikatiya"],[181,"Madhya Vidyalay, Bagewar Ekamba (Paschmi Bhag)","Imamganj","Jhikatiya"],[182,"Prathmik Vidyalya, Shiva (Dayan Bhaag)","Imamganj","Biraj"],[183,"Prathmik Vidyalay, Shiva (Bayan Bhaag)","Imamganj","Biraj"],[184,"Samudaiyk Vikash Bhawan, Bhatbigha","Imamganj","Biraj"],[185,"Madhya Vidyalay, Kadarpur","Imamganj","Biraj"],[186,"Samudayik Vikas Bhawan, Baseta","Imamganj","Biraj"],[187,"Utkarmit Uchch Vidyalay, Viraj (Dayan Bhaag)","Imamganj","Biraj"],[188,"Utkramit Uchh Vidyalay, Viraj (Bayan Bhaag)","Imamganj","Biraj"],[189,"Prathmik Vidyalay, Khaira","Imamganj","Biraj"],[190,"Madhya Vidyalay, Imnabad (Dayan Bhaag)","Imamganj","Biraj"],[191,"Madhya Vidyalay, Imnabad (Bayaan Bhaag)","Imamganj","Biraj"],[192,"Prathmik Vidyalay, Suhail","Imamganj","Biraj"],[193,"Madhya Vidyalay Salaiya (Purvi Bhag)","Imamganj","Salaiya"],[194,"Madhya Vidyalay, Salaiya (Uttari Bhaag)","Imamganj","Salaiya"],[195,"Madhya Vidyalay, Salaiya (Paschmi Bhag)","Imamganj","Salaiya"],[196,"Madhya Vidyalay, Salaiya (Madhya Bhag)","Imamganj","Salaiya"],[197,"Madhya Vidyalay, Sevti Bara (Dayan Bhaag)","Imamganj","Salaiya"],[198,"Madhya Vidyalay, Sevti Bara (Bayan Bhaag)","Imamganj","Salaiya"],[199,"Madhya Vidyalay, Fulwariya","Imamganj","Salaiya"],[200,"Prathmik Vidyalay, Pakri Sohya (Bayan Bhag)","Imamganj","Salaiya"],[201,"Prathmik Vidyalay Pakri Sohya (Dayan Bhag)","Imamganj","Salaiya"],[202,"Madhya Vidyalay, Pathra-1 (Dayan Bhaag)","Imamganj","Salaiya"],[203,"Madhya Vidyalay, Pathra-1 (Bayaan Bhaag)","Imamganj","Salaiya"],[204,"Utkarmit Uchch Vidyalay, Telwari (Purvi Bhag)","Imamganj","Manjhauli"],[205,"Utkarmit Uchch Vidyalay, Telwari (Paschmi Bhag)","Imamganj","Manjhauli"],[206,"Prathmik Vidyalay, Akhauriyadih (Dayan Bhaag)","Imamganj","Manjhauli"],[207,"Prathmik Vidyalay, Akhauriyadih (Bayaan Bhaag)","Imamganj","Manjhauli"],[208,"Madhya Vidyalay, Pokhari (Uttari Bhag)","Imamganj","Manjhauli"],[209,"Madhya Vidyalay Pokhari (Dakshini Bhag)","Imamganj","Manjhauli"],[210,"Rajkiya Madhya Vidyalay, Manjhauli (Uttari Bhag)","Imamganj","Manjhauli"],[211,"Rajkiya Madhya Vidyalay, Manjhauli (Dakshini Bhag)","Imamganj","Manjhauli"],[212,"Prathmik Vidyalay, Umaan Kuwa (Dayan Bhaag)","Imamganj","Manjhauli"],[213,"Prathmik Vidyalay, Umaan Kuaa (Bayaan Bhaag)","Imamganj","Manjhauli"],[214,"Madhya Vidyalay, Devriya","Imamganj","Bikopur"],[215,"Prathmik Vidyalay, Kosmahi","Imamganj","Bikopur"],[216,"Urdu Madhya Vidyalay, Kothi (Uttari Bhag)","Imamganj","Bikopur"],[217,"Urdu Madhya Vidyalay, Kothi (Pakschhimi Bhaag)","Imamganj","Bikopur"],[218,"Urdu Madhya Vidyalay, Kothi (Purvi Bhag)","Imamganj","Bikopur"],[219,"Urdu Madhya Vidyalaya, Kothi (Poorvi Bhaag-A)","Imamganj","Bikopur"],[220,"Urdu Madhya Vidyalay, Kothi (Dakshini Bhag)","Imamganj","Bikopur"],[221,"Urdu Madhya Vidyalaya, Kothi (Dakshini Bhaag-A)","Imamganj","Bikopur"],[222,"Madhya Vidyalay, Vikopur (Purvi Bhag)","Imamganj","Bikopur"],[223,"Madhya Vidyalay, Vikopur (Uttari Bhag)","Imamganj","Bikopur"],[224,"Madhya Vidyalay, Vikopur (Paschmi Bhag)","Imamganj","Bikopur"],[225,"Prathmik Vidyalay, Pokhraha","Imamganj","Bikopur"],[226,"Prathmik Vidyalay, Gangati","Imamganj","Bikopur"],[227,"Buniyadi Madhya Vidyalay, Barakala","Imamganj","Lawabar"],[228,"Prathmik Vidyalay, Sovdi Naya Bhawan (Poorvi Bhaag)","Imamganj","Lawabar"],[229,"Prathmik Vidyalay, Sovdi Naya Bhawan (Paschhimi Bhaag)","Imamganj","Lawabar"],[230,"Madhya Vidyalay, Basura (Paschhmi Bhaag)","Imamganj","Lawabar"],[231,"Madhya Vidyalay, Basura (Poorvi Bhaag)","Imamganj","Lawabar"],[232,"Prathmik Vidyalay, Lawavar (Dayan Bhaag)","Imamganj","Lawabar"],[233,"Prathmik Vidyalay, Lawavar (Bayan Bhaag)","Imamganj","Lawabar"],[234,"Urdu Makhtab, Belwar (Dayan Bhaag)","Imamganj","Lawabar"],[235,"Urdu Makhtab, Belwar (Bayan Bhaag)","Imamganj","Lawabar"],[236,"Utkramit Uchch Vidyalay Baghauta","Imamganj","Lawabar"],[237,"Public Uchch Vidyalay, Raniganj Gaderiya","Imamganj","Imamganj Nagar Panchayat"],[238,"Panchayat Bhawan, Raniganj (Paschmi Bhag)","Imamganj","Imamganj Nagar Panchayat"],[239,"Prathmik Vidyalay, Tateriya","Imamganj","Imamganj Nagar Panchayat"],[240,"Panchayat Bhawan, Raniganj (Purvi Bhag)","Imamganj","Imamganj Nagar Panchayat"],[241,"Panchayat Bhawan, Raniganj (Uttari Bhaag)","Imamganj","Imamganj Nagar Panchayat"],[242,"Prathmik Vidyalay, Raniganj Gaderiya","Imamganj","Imamganj Nagar Panchayat"],[243,"Prathmik Vidyalay, Chapri (Bayan Bhag)","Imamganj","Imamganj Nagar Panchayat"],[244,"Prathmik Vidyalay, Chapri (Dayan Bhag)","Imamganj","Imamganj Nagar Panchayat"],[245,"Urdu Prathmik Vidyalay, Chakarbandha","Imamganj","Chhakar Bandha"],[246,"Samudayik Vikash Bhawan, Kishunichak","Imamganj","Chhakar Bandha"],[247,"Utkramit Uchch Vidyalay Vanshi","Imamganj","Chhakar Bandha"],[248,"Madhya Vidyalay, Kendua","Imamganj","Chhakar Bandha"],[249,"Aganbadi Kendra, Binayaka","Imamganj","Chhakar Bandha"],[250,"Madhya Vidyalay, Gejana","Imamganj","Chhakar Bandha"],[251,"Madhya Vidyalay, Badhaikhap (Dayan Bhaag)","Imamganj","Chhakar Bandha"],[252,"Madhya Vidyalay, Badhaikhaap (Bayan Bhaag)","Imamganj","Chhakar Bandha"],[253,"Prathmik Vidyalay, Purushottampur","Imamganj","Chhakar Bandha"],[254,"Utkramit Uchch Vidyalay Kunjeshar (Dayan Bhag)","Imamganj","Kujesar"],[255,"Utkramit Uchh Vidyalay, Kunjeshar (Purvi Bhaag)","Imamganj","Kujesar"],[256,"Utkramit Uchch Vidyalay Kunjeshar (Bayan Bhag)","Imamganj","Kujesar"],[257,"Prathmik Vidyalay, Bhidha (Bayan Bhag)","Imamganj","Kujesar"],[258,"Prathmik Vidyalay, Bhidha (Dayan Bhag)","Imamganj","Kujesar"],[259,"Madhy Vidyalay, Parasiya","Imamganj","Kujesar"],[260,"Madhya Vidyalay, Bara","Imamganj","Kujesar"],[261,"Madhya Vidyalay, Kosuma","Imamganj","Kujesar"],[262,"Madhya Vidyalay, Chuawar Bahera","Imamganj","Chua Bar"],[263,"Cooperative Bhawan, Chuawar","Imamganj","Chua Bar"],[264,"Prathmik Vidyalay, Raunsa","Imamganj","Chua Bar"],[265,"Madhya Vidyalay, Bahera Chuawar","Imamganj","Chua Bar"],[266,"Samudayik Vikas Bawan, Koyriya Kuiwar","Imamganj","Chua Bar"],[267,"Panchayat Bhawan, Kochya (Dayan Bhaag)","Imamganj","Chua Bar"],[268,"Panchayat Bhawan, Kochya (Bayan Bhaag)","Imamganj","Chua Bar"],[269,"Prathmik Vidyalay, Nehuta","Imamganj","Chua Bar"],[270,"Madhya Vidyalay, Darbhanga","Imamganj","Chua Bar"],[271,"Madhya Vidyalay, Kundkarai (Dayan Bhaag)","Imamganj","Chua Bar"],[272,"Madhya Vidyalay, Kundkarai (Bayan Bhaag)","Imamganj","Chua Bar"],[273,"Prathmik Vidyalay, Ujiyar Bahera","Imamganj","Nagwan"],[274,"Samudayik Vikas Bhawan, Mohanpur (Kundilpur Me Sthit)","Imamganj","Nagwan"],[275,"Madhya Vidyalay, Ujiyar Bahera (Kanouda Me Sthit)","Imamganj","Nagwan"],[276,"Prathmik Vidyalay, Nagwan (Purvi Bhag)","Imamganj","Nagwan"],[277,"Prathmik Vidyalay, Nagwan (Paschmi Bhag)","Imamganj","Nagwan"],[278,"Madhya Vidyalay Manjra","Imamganj","Nagwan"],[279,"Prathmik Vidyalay, Pathra","Imamganj","Nagwan"],[280,"Samudayik Vikas Bhawan, Fatehpur","Imamganj","Nagwan"],[281,"Madhya Vidyalay, Nawakhap","Imamganj","Nagwan"],[282,"Madhya Vidyalay, Khesara","Imamganj","Naudiha"],[283,"Prathamik Vidyalay, Pipara","Imamganj","Naudiha"],[284,"Madhya Vidyalay, Bahuara","Imamganj","Naudiha"],[285,"Prathmik Vidyalay, Rohve","Imamganj","Naudiha"],[286,"Aganbadi Kendra, Vedauli","Imamganj","Naudiha"],[287,"Madhya Vidyalay, Naudiha","Imamganj","Naudiha"],[288,"Samudayik Vikas Bhawan, Sangrampur (Poorvi Bhaag)","Imamganj","Naudiha"],[289,"Samudayik Vikas Bhawan, Sangrampur (Pakschhimi Bhaag)","Imamganj","Naudiha"],[290,"Madhya Vidyalay, Bindhua (Jolah Vigha me Isthit)","Banke Bazar","Lutua"],[291,"Samudayik Vikas Bhawan, Koyriya","Banke Bazar","Lutua"],[292,"Madhya Vidyalay, Baratand","Banke Bazar","Lutua"],[293,"Utkarmit Madhya Vidyalay, Sondaha (Dayan Bhaag)","Banke Bazar","Lutua"],[294,"Utkramit Madhya Vidyalay, Sondaha (Bayan Bhaag)","Banke Bazar","Lutua"],[295,"Utkarmit Madhya Vidyalay, Jathi Kothilawa","Banke Bazar","Lutua"],[296,"Prathmik Vidyalay, Asurain","Banke Bazar","Lutua"],[297,"Panchayat Bhawan, Lutua (Dayan Bhaag)","Banke Bazar","Lutua"],[298,"Panchayat Bhawan, Lutua (Bayan Bhaag)","Banke Bazar","Lutua"],[299,"Utkarmit Madhya Vidyalay, Lutua (Dayan Bhaag)","Banke Bazar","Lutua"],[300,"Utkramit Madhya Vidyalay, Lutua (Bayan Bhaag)","Banke Bazar","Lutua"],[301,"Madhya Vidyalaya, Belwatand","Banke Bazar","Lutua"],[302,"Prathmik Vidyalay, Dighasin","Banke Bazar","Lutua"],[303,"Madhya Vidyalay, Gejna","Banke Bazar","Lutua"],[304,"Prathmik Vidyalay, Delho","Banke Bazar","Tilaiya"],[305,"Madhya Vidyalay, Tilaiya (Diguriya Me Sthit)","Banke Bazar","Tilaiya"],[306,"Utkarmit Madhya Vidyalay, Khajuriya","Banke Bazar","Tilaiya"],[307,"Prathmik Vidyalay, Kharar","Banke Bazar","Tilaiya"],[308,"Prathmik Vidyalay, Rakshi","Banke Bazar","Tilaiya"],[309,"Madhya Vidyalay, Dhaneta","Banke Bazar","Tilaiya"],[310,"Panchayat Bhawan, Tilaiya (Utari Bhag)","Banke Bazar","Tilaiya"],[311,"Pustakalaya Bhawan, Tilaya","Banke Bazar","Tilaiya"],[312,"Panchayat Bhawan, Tilaiya (Dakshini Bhag)","Banke Bazar","Tilaiya"],[313,"Utkarmit Urdu Madhya Vidyalay, Dumrawan (Bayan Bhag)","Banke Bazar","Tilaiya"],[314,"Utkarmit Urdu Madhya Vidyalay Dumrawan (Dayan Bhag)","Banke Bazar","Tilaiya"],[315,"Madhya Vidyalay, Barheta (Bayan Bhag)","Banke Bazar","Barheta"],[316,"Madhya Vidyalay, Barheta (Poorvi Bhaag)","Banke Bazar","Barheta"],[317,"Madhya Vidyalay, Barheta (Dayan Bhag)","Banke Bazar","Barheta"],[318,"Madhya Vidyalay, Barheta (Paschimi Bhaag)","Banke Bazar","Barheta"],[319,"Prathmik Vidyalay, Kumbhi (Paschmi Bhag)","Banke Bazar","Barheta"],[320,"Prathmik Vidyalay, Kumbhi (Purvi Bhag)","Banke Bazar","Barheta"],[321,"Samudayik Vikas Bhawan, Pachamah","Banke Bazar","Barheta"],[322,"Panchayat Bhawan, Khaira","Banke Bazar","Barheta"],[323,"Madhya Vidyalay, Nauhar","Banke Bazar","Barheta"],[324,"Samudayik Vikas Bhawan, Dholi","Banke Bazar","Barheta"],[325,"Utkramit Madhya Vidyalay, Hasanpur","Banke Bazar","Barheta"],[326,"Utkarmit Madhya Vidyalay Vishunpur","Banke Bazar","Barheta"],[327,"Madhya Vidyalay, Jamuara Kala (Bayan Bhag)","Banke Bazar","Bihargain"],[328,"Madhya Vidyalay, Jamuara Kala (Dayan Bhag)","Banke Bazar","Bihargain"],[329,"Samudayik Vikas Bhawan, Fatehpur","Banke Bazar","Bihargain"],[330,"Utkramit Madhya VIdyalay, Bihargai","Banke Bazar","Bihargain"],[331,"Prathmik Vidyalay, Bihargai","Banke Bazar","Bihargain"],[332,"Utkarmit Madhya Vidyalay, Dhevri","Banke Bazar","Bihargain"],[333,"Prathmik Vidyalay, Jamuara Khurd","Banke Bazar","Bihargain"],[334,"Utkarmit Madhya Vidyalay, Chaugain (Paschmi Bhag)","Banke Bazar","Bihargain"],[335,"Utkarmit Madhya Vidyalay, Chaugai (Purvi Bhag)","Banke Bazar","Bihargain"],[336,"Prathmik Vidyalay, Chandpur (Dayan Bhaag)","Banke Bazar","Bihargain"],[337,"Prathmik Vidyalay, Chandpur (Bayaan Bhaag)","Banke Bazar","Bihargain"],[338,"Samudayik Vikas Bhawan, Jalalpur","Banke Bazar","Roshan Ganj"],[339,"Prathmik Vidyalay, Dhakanchuan","Banke Bazar","Roshan Ganj"],[340,"Prathmik Vidyalaya, Bhaluhar","Banke Bazar","Roshan Ganj"],[341,"Madhya Vidyalay, Roushanganj (Dayan Bhag)","Banke Bazar","Roshan Ganj"],[342,"Madhya Vidyalay, Roushanganj (Bayan Bhag)","Banke Bazar","Roshan Ganj"],[343,"Samudayik Vikas Bhawan, Sirasa","Banke Bazar","Roshan Ganj"],[344,"Samudayik Vikas Bhawan, Uchala","Banke Bazar","Roshan Ganj"],[345,"Prathmik Vidyalay, Vaida Saida","Banke Bazar","Roshan Ganj"],[346,"Urdu Madhy Vidhyalay, Madarpur","Banke Bazar","Roshan Ganj"],[347,"Utkramit Madhya Vidyalay, Balasot","Banke Bazar","Roshan Ganj"],[348,"Prathmik Vidyalay, Dhamaniya","Banke Bazar","Roshan Ganj"],[349,"Prathmik Vidyalaya, Manjhauliya","Banke Bazar","Roshan Ganj"],[350,"Samudayik Vikas Bhawan, Koyri Bigha","Banke Bazar","Roshan Ganj"],[351,"Prathmik Vidyalay, Kundil (Purvi Bhag)","Banke Bazar","Saif Ganj"],[352,"Prathmik Vidyalay, Kundil (Paschmi Bhag)","Banke Bazar","Saif Ganj"],[353,"Samudayik Vikas Bhawan, Tarwan","Banke Bazar","Saif Ganj"],[354,"Madhya Vidyalay Saifganj (Purvi Bhag)","Banke Bazar","Saif Ganj"],[355,"Madhya Vidyalay, Saifganj, (Paschimi Bhag)","Banke Bazar","Saif Ganj"],[356,"Utkarmit Madhya Vidyalay, Ajamgarh (Bayan Bhag)","Banke Bazar","Saif Ganj"],[357,"Utkarmit Madhya Vidyalay, Ajamgarh (Dayan Bhag)","Banke Bazar","Saif Ganj"],[358,"Prathmik Vidyalay, Bairi Banawas","Banke Bazar","Saif Ganj"],[359,"Prathmik Vidyalay, Etawan","Banke Bazar","Saif Ganj"],[360,"Prathmik Vidyalay, Singhpur (Purvi Bhag)","Banke Bazar","Tarwan"],[361,"Prathmik Vidyalay, Singhpur (Paschmi Bhag)","Banke Bazar","Tarwan"],[362,"Madhya Vidyalay, Dhongila (Dayan Bhaag)","Banke Bazar","Tarwan"],[363,"Madhya Vidyalay, Dhongila (Bayan Bhaag)","Banke Bazar","Tarwan"],[364,"Madhya Vidyalay, Nawadih","Banke Bazar","Tarwan"],[365,"Samudayik Vikas Bhawan, Koyriya Tandwa","Banke Bazar","Tarwan"],[366,"Prathmik Vidyalaya, Tandwa","Banke Bazar","Tarwan"],[367,"Prathmik Vidyalay, Bankebazar (Purvi Bhag)","Banke Bazar","Tarwan"],[368,"Prathmik Vidyalay, Bankebazar (Paschmi Bhag)","Banke Bazar","Tarwan"],[369,"Utkarmit Madhya Vidyalay, Jondhi (Bayan Bhag)","Banke Bazar","Tarwan"],[370,"Utkarmit Madhya Vidyalay, Jondhi (Dayan Bhag)","Banke Bazar","Tarwan"],[371,"Prathmik Vidyalay, Shankarapur (Dayan Bhaag)","Banke Bazar","Goitha"],[372,"Prathmik Vidyalay, Shankarpur (Bayan Bhaag)","Banke Bazar","Goitha"],[373,"Urdu Madhya Vidyalaya, Goitha (Dayan Bhaag)","Banke Bazar","Goitha"],[374,"Urdu Madhya Vidyalaya, Goitha (Bayan Bhaag)","Banke Bazar","Goitha"],[375,"Madhya Vidyalay, Bhaluhar (Paschmi Bhag)","Banke Bazar","Goitha"],[376,"Madhya Vidyalay, Bhaluhar (Purvi Bhag)","Banke Bazar","Goitha"],[377,"Utkarmit Madhya Vidyalay, Juri (Purvi Bhag)","Banke Bazar","Goitha"],[378,"Utkramit Madhya Vidyalay, Juri (Dayaan Bhaag)","Banke Bazar","Goitha"],[379,"Utkarmit Madhya Vidyalay, Juri (Paschmi Bhag)","Banke Bazar","Goitha"],[380,"Utkramit Madhya Vidyalay, Karachoi","Banke Bazar","Pananiya"],[381,"Prathmik Vidyalay, Pananiya (Pashchimi Bhag)","Banke Bazar","Pananiya"],[382,"Prathmik Vidyalay, Pananiya (Purvi Bhag)","Banke Bazar","Pananiya"],[383,"Prathmik Vidyalay, Harankel","Banke Bazar","Pananiya"],[384,"Madhya Vidyalay, Moniya (Paschmi Bhag)","Banke Bazar","Pananiya"],[385,"Madhya Vidyalay, Moniya (Purvi Bhag)","Banke Bazar","Pananiya"],[386,"Utkarmit Madhya Vidyalay, Balsot","Banke Bazar","Pananiya"],[387,"Madhya Vidyalay, Menka","Banke Bazar","Pananiya"],[388,"Utkarmit Madhya Vidyalay, Parsawan Khurd (Uttari Bhag)","Banke Bazar","Parsawan Khurd"],[389,"Utkarmit Madhya Vidyalay, Parsawan Khurd (Madhya Bhag)","Banke Bazar","Parsawan Khurd"],[390,"Utkarmit Madhya Vidyalay, Parsawan Khurd (Dakshini Bhag)","Banke Bazar","Parsawan Khurd"],[391,"Prathmik Vidyalay, Anjan","Banke Bazar","Parsawan Khurd"],[392,"Utkarmit Urdu Madhya Vidyalay, Manjari Khurd","Banke Bazar","Parsawan Khurd"],[393,"Utkramit Madhya Vidyalay, Bela","Banke Bazar","Parsawan Khurd"],[394,"Prathmik Vidyalay, Parsachuan (Purvi Bhag)","Banke Bazar","Parsawan Khurd"],[395,"Prathmik Vidyalay, Parsachuan (Paschmi Bhag)","Banke Bazar","Parsawan Khurd"],[396,"Utkarmit Madhya Vidyalay, Sagdiha","Banke Bazar","Baital"],[397,"Utkramit Madhya Vidyalay, Nawada (Dayan Bhaag)","Banke Bazar","Baital"],[398,"Utkratmit Madhya Vidyalaya, Nawada (Bayan Bhaag)","Banke Bazar","Baital"],[399,"Prathmik Vidyalay, Taradih","Banke Bazar","Baital"],[400,"Utkarmit Madhya Vidyalay, Baital (Dayan Bhaag)","Banke Bazar","Baital"],[401,"Utkramit Madhya Vidyalaya, Baital (Bayaan Bhaag)","Banke Bazar","Baital"],[402,"Utkarmit Madhya Vidyalay, Lemboiya","Banke Bazar","Baital"],[403,"Prathmik Vidyalay, Kubdi","Banke Bazar","Baital"]] };
+
+</script>
+<script>
+/* =====================================================================
+   Data layer — one interface, two backends:
+   • live  : Supabase (when SUPABASE_URL is set in config.js)
+   • demo  : sample members on the real Gaya blocks and panchayats — for trying the app
+   ===================================================================== */
+(function () {
+  const LEVELS = ['state', 'district', 'block', 'panchayat', 'village'];
+  window.LEVELS = LEVELS;
+  const LOC_COLS = 'id,level,name,name_hi,parent_id,path,subdivision,expected_villages';
+
+  function friendlyError(e) {
+    const code = e && (e.code || e.status);
+    const msg = (e && e.message) || String(e);
+    if (code === '23505' || /duplicate key/i.test(msg))
+      return new Error('यह सदस्य पहले से पंजीकृत है। This person is already registered with this mobile number.');
+    if (code === '42501' || /row-level security|permission denied/i.test(msg))
+      return new Error("You don't have permission to change data outside your area.");
+    if (/Failed to fetch|NetworkError|network/i.test(msg)) {
+      const err = new Error('No internet connection.'); err.offline = true; return err;
+    }
+    return new Error(msg.replace(/^.*?ERROR:\s*/, ''));
+  }
+
+  function cleanPhone(p) {
+    const d = String(p || '').replace(/\D/g, '');
+    return d ? d.slice(-10) : '';
+  }
+  window.cleanPhone = cleanPhone;
+
+  // same tidy-up the database does: trim, single spaces, Title Case
+  function tidyVillage(v) {
+    return String(v || '').trim().replace(/\s+/g, ' ').toLowerCase().replace(/(^|[\s(-])\S/g, c => c.toUpperCase());
+  }
+  window.tidyVillage = tidyVillage;
+
+  function matches(m, f) {
+    if (f.locationId && !m.location_path.includes(f.locationId)) return false;
+    if (f.status && m.status !== f.status) return false;
+    if (f.excludeRejected && m.status === 'rejected') return false;
+    if (f.gender && m.gender !== f.gender) return false;
+    if (f.ageMin && !(m.age >= f.ageMin)) return false;
+    if (f.ageMax && !(m.age <= f.ageMax)) return false;
+    if (f.occupation && !(m.occupation || '').toLowerCase().includes(f.occupation.toLowerCase())) return false;
+    if (f.village && !(m.village_name || '').toLowerCase().includes(f.village.toLowerCase())) return false;
+    if (f.boothNo && m.booth_no !== +f.boothNo) return false;
+    if (f.boothId && m.booth_id !== +f.boothId) return false;
+    if (f.q) {
+      const s = f.q.toLowerCase();
+      if (![m.full_name, m.phone, m.guardian_name].some(v => (v || '').toLowerCase().includes(s))) return false;
+    }
+    return true;
+  }
+
+  /* ------------------------------------------------------------------ LIVE */
+  function createLive(cfg) {
+    const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+    const cache = new Map();
+    const remember = rows => (rows || []).forEach(r => cache.set(r.id, r));
+    const chk = ({ data, error, count }) => { if (error) throw friendlyError(error); return { data, count }; };
+    const clean = s => s.replace(/[%_,()*]/g, ' ').trim();
+
+    function filtered(q, f) {
+      if (f.locationId) q = q.contains('location_path', [f.locationId]);
+      if (f.status) q = q.eq('status', f.status);
+      if (f.excludeRejected) q = q.neq('status', 'rejected');
+      if (f.gender) q = q.eq('gender', f.gender);
+      if (f.ageMin) q = q.gte('age', f.ageMin);
+      if (f.ageMax) q = q.lte('age', f.ageMax);
+      if (f.occupation) q = q.ilike('occupation', `%${clean(f.occupation)}%`);
+      if (f.village) q = q.ilike('village_name', `%${clean(f.village)}%`);
+      if (f.boothNo) q = q.eq('booth_no', +f.boothNo);
+      if (f.boothId) q = q.eq('booth_id', +f.boothId);
+      if (f.q) {
+        const s = clean(f.q);
+        if (s) q = q.or(`full_name.ilike.%${s}%,phone.ilike.%${s}%,guardian_name.ilike.%${s}%`);
+      }
+      return q;
+    }
+
+    return {
+      mode: 'live',
+      async session() { return (await sb.auth.getSession()).data.session; },
+      onAuth(cb) { sb.auth.onAuthStateChange((_ev, s) => cb(s)); },
+      async sendCode(email) {
+        chk(await sb.auth.signInWithOtp({
+          email, options: { shouldCreateUser: true, emailRedirectTo: location.origin + location.pathname }
+        }));
+      },
+      async verifyCode(email, token) { chk(await sb.auth.verifyOtp({ email, token, type: 'email' })); },
+      async signOut() { await sb.auth.signOut(); },
+      async me() { const { data } = chk(await sb.rpc('me')); return (data && data[0]) || null; },
+
+      async children(parentId) {
+        let q = sb.from('locations').select(LOC_COLS).order('name').limit(5000);
+        q = parentId == null ? q.is('parent_id', null) : q.eq('parent_id', parentId);
+        const { data } = chk(await q); remember(data); return data;
+      },
+      async locations(ids) {
+        ids = [...new Set(ids.filter(Boolean))];
+        const need = ids.filter(i => !cache.has(i));
+        for (let i = 0; i < need.length; i += 150) {
+          const { data } = chk(await sb.from('locations').select(LOC_COLS).in('id', need.slice(i, i + 150)));
+          remember(data);
+        }
+        return ids.map(i => cache.get(i)).filter(Boolean);
+      },
+      async addLocation(loc) {
+        const { data } = chk(await sb.from('locations').insert(loc).select(LOC_COLS).single());
+        remember([data]); return data;
+      },
+      async villageNames(panchayatId) {
+        const { data } = chk(await sb.rpc('village_names', { p_panchayat: panchayatId }));
+        return data || [];
+      },
+
+      async booths(panchayatId) {
+        const { data } = chk(await sb.from('booths').select('id,assembly,number,name,panchayat_id').eq('panchayat_id', panchayatId).order('number'));
+        return data || [];
+      },
+      async boothsByIds(ids) {
+        ids = [...new Set(ids.filter(Boolean))]; if (!ids.length) return [];
+        const { data } = chk(await sb.from('booths').select('id,assembly,number,name,panchayat_id').in('id', ids));
+        return data || [];
+      },
+      async boothBreakdown(locId) {
+        const { data } = chk(await sb.rpc('booth_breakdown', { p_location: locId }));
+        return (data || []).map(r => ({ ...r, total: +r.total, verified: +r.verified, pending: +r.pending }));
+      },
+
+      async registerPublic(m) {
+        chk(await sb.from('members').insert({ ...m, status: 'pending', source: 'self', created_by: null }));
+      },
+      async addMember(m) {
+        const s = await this.session();
+        chk(await sb.from('members').insert({ ...m, source: 'coordinator', status: m.status || 'verified', created_by: s && s.user.id }));
+      },
+      async updateMember(id, patch) { chk(await sb.from('members').update(patch).eq('id', id)); },
+      async deleteMember(id) { chk(await sb.from('members').delete().eq('id', id)); },
+      async getMember(id) { const { data } = chk(await sb.from('members').select('*').eq('id', id).single()); return data; },
+      async listMembers(f, { offset = 0, limit = 50 } = {}) {
+        let q = filtered(sb.from('members').select('*', { count: 'exact' }), f);
+        q = q.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+        const { data, count } = chk(await q);
+        return { rows: data, count: count || 0 };
+      },
+      async counts(parentId) {
+        const { data } = chk(await sb.rpc('member_counts', { p_parent: parentId ?? null }));
+        return (data || []).map(r => ({ ...r, total: +r.total, verified: +r.verified, pending: +r.pending,
+          villages_reached: +r.villages_reached, expected_villages: r.expected_villages == null ? null : +r.expected_villages }));
+      },
+      async villageBreakdown(panchayatId) {
+        const { data } = chk(await sb.rpc('village_breakdown', { p_panchayat: panchayatId }));
+        return (data || []).map(r => ({ ...r, total: +r.total, verified: +r.verified, pending: +r.pending }));
+      },
+
+      async coordinators() { const { data } = chk(await sb.from('coordinators').select('*').order('role')); return data; },
+      async saveCoordinator(c) { chk(await sb.from('coordinators').upsert(c)); },
+      async removeCoordinator(email) { chk(await sb.from('coordinators').delete().eq('email', email)); }
+    };
+  }
+
+  /* ------------------------------------------------------------------ DEMO */
+  function createDemo() {
+    let nextId = 1;
+    const locs = new Map();
+    const add = (level, name, parent, extra = {}) => {
+      const id = nextId++;
+      const path = parent ? [...locs.get(parent).path, id] : [id];
+      const l = { id, level, name, name_hi: null, parent_id: parent || null, path, subdivision: null, expected_villages: null, ...extra };
+      locs.set(id, l); return id;
+    };
+    const bihar = add('state', 'Bihar', null, { name_hi: 'बिहार' });
+    const D = {};
+    ['Araria', 'Arwal', 'Aurangabad', 'Banka', 'Begusarai', 'Bhagalpur', 'Bhojpur', 'Buxar', 'Darbhanga',
+      'East Champaran', 'Gaya', 'Gopalganj', 'Jamui', 'Jehanabad', 'Kaimur', 'Katihar', 'Khagaria', 'Kishanganj',
+      'Lakhisarai', 'Madhepura', 'Madhubani', 'Munger', 'Muzaffarpur', 'Nalanda', 'Nawada', 'Patna', 'Purnia',
+      'Rohtas', 'Saharsa', 'Samastipur', 'Saran', 'Sheikhpura', 'Sheohar', 'Sitamarhi', 'Siwan', 'Supaul',
+      'Vaishali', 'West Champaran'].forEach(n => { D[n] = add('district', n, bihar); });
+
+    // real Gaya blocks and panchayats (js/gaya-data.js)
+    const panchayats = []; const blockId = {}; const panchId = {};
+    for (const [block, info] of Object.entries(window.GAYA_DATA || {})) {
+      const bid = add('block', block, D.Gaya, { subdivision: info.s }); blockId[block] = bid;
+      for (const [p, v] of info.p) {
+        const pid = add('panchayat', p, bid, { expected_villages: v }); panchId[block + '/' + p] = pid;
+        panchayats.push({ id: pid, name: p, w: block === 'Imamganj' ? 4 : ['Sherghati', 'Dumaria', 'Gurua', 'Banke Bazar', 'Amas'].includes(block) ? 2 : 1 });
+      }
+    }
+
+    // Imamganj town area and the 227-Imamganj polling booths (js/booth-data.js)
+    if (blockId.Imamganj) {
+      const np = add('panchayat', 'Imamganj Nagar Panchayat', blockId.Imamganj); panchId['Imamganj/Imamganj Nagar Panchayat'] = np;
+      panchayats.push({ id: np, name: 'Imamganj', w: 4, town: true });
+    }
+    const booths = [];
+    const BD = window.BOOTH_DATA;
+    if (BD) for (const [number, name, block, panch] of BD.booths) {
+      const pid = panchId[block + '/' + panch];
+      if (pid) booths.push({ id: booths.length + 1, assembly: BD.assembly, number, name, panchayat_id: pid, path: locs.get(pid).path });
+    }
+    const boothsOf = pid => booths.filter(b => b.panchayat_id === pid);
+
+    // deterministic sample members (names and numbers are made up)
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const pick = a => a[Math.floor(rnd() * a.length)];
+    const male = ['Ramesh', 'Suresh', 'Rajesh', 'Mukesh', 'Dinesh', 'Anil', 'Sunil', 'Vijay', 'Ajay', 'Santosh', 'Manoj', 'Pankaj', 'Ravi', 'Amit', 'Rakesh', 'Umesh', 'Naresh', 'Shankar', 'Arvind', 'Pramod'];
+    const female = ['Sunita', 'Anita', 'Rekha', 'Kiran', 'Pooja', 'Priya', 'Savita', 'Geeta', 'Meena', 'Rinku'];
+    const elders = ['Ramdeo', 'Shivnandan', 'Jagdish', 'Ramashray', 'Kameshwar', 'Baleshwar', 'Rajendra', 'Mahendra', 'Lalan', 'Shiv Shankar'];
+    const occ = ['Farmer / किसान', 'Business / व्यापार', 'Govt job / सरकारी नौकरी', 'Private job / निजी नौकरी', 'Student / छात्र', 'Labour / मजदूर', 'Homemaker / गृहिणी', 'Teacher / शिक्षक'];
+    const edu = ['Primary', 'Matric (10th)', 'Inter (12th)', 'Graduate', 'Post-graduate', 'Illiterate / निरक्षर'];
+    const weighted = panchayats.flatMap(p => Array(p.w).fill(p));
+    const members = [];
+    for (let i = 0; i < 420; i++) {
+      const g = rnd() < 0.68 ? 'M' : 'F';
+      const p = pick(weighted);
+      const r = rnd();
+      const vr = rnd();
+      const phone = '90000' + String(10000 + i * 37).slice(-5);
+      members.push({
+        id: 'demo-' + i,
+        full_name: `${pick(g === 'M' ? male : female)} ${rnd() < 0.5 ? (g === 'F' ? 'Kumari ' : 'Kumar ') : ''}Dangi`,
+        guardian_name: `${pick(elders)} Dangi`,
+        gender: g, age: 18 + Math.floor(rnd() * 55),
+        phone, whatsapp: phone,
+        education: pick(edu), occupation: pick(occ), family_size: 2 + Math.floor(rnd() * 8),
+        address: 'Ward ' + (1 + Math.floor(rnd() * 12)), notes: '',
+        ...(() => { const bs = boothsOf(p.id); const b = bs.length && rnd() < 0.8 ? pick(bs) : null; return { booth_id: b ? b.id : null, booth_no: b ? b.number : null }; })(),
+        place_id: p.id, village_name: p.town ? 'Ward ' + (1 + Math.floor(vr * 15)) : vr < 0.55 ? p.name : vr < 0.8 ? `${p.name} Khurd` : `${p.name} Kalan`,
+        location_path: locs.get(p.id).path, consent: true,
+        status: r < 0.7 ? 'verified' : r < 0.95 ? 'pending' : 'rejected',
+        source: rnd() < 0.6 ? 'self' : 'coordinator',
+        created_at: new Date(Date.now() - rnd() * 60 * 864e5).toISOString()
+      });
+    }
+    members.sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+    const coords = [
+      { email: 'admin@demo.in', full_name: 'Sidharth (you)', phone: '9000000001', role: 'super_admin', location_id: null, active: true },
+      { email: 'gaya@demo.in', full_name: 'Sample District Coordinator', phone: '9000000002', role: 'district', location_id: D.Gaya, active: true },
+      { email: 'imamganj@demo.in', full_name: 'Sample Block Coordinator', phone: '9000000003', role: 'block', location_id: blockId.Imamganj, active: true },
+      { email: 'bikopur@demo.in', full_name: 'Sample Panchayat Coordinator', phone: '9000000004', role: 'panchayat', location_id: panchId['Imamganj/Bikopur'], active: true }
+    ];
+
+    let current = null;
+    const meRow = () => coords.find(c => c.email === current && c.active);
+    const can = path => { const c = meRow(); return !!c && (c.role === 'super_admin' || path.includes(c.location_id)); };
+    const isAdmin = () => meRow()?.role === 'super_admin';
+    const deny = () => { throw friendlyError({ code: '42501' }); };
+    const later = v => new Promise(r => setTimeout(() => r(v), 100));
+    const validate = m => {
+      m.phone = cleanPhone(m.phone); m.whatsapp = cleanPhone(m.whatsapp) || m.phone;
+      if (!/^[6-9]\d{9}$/.test(m.phone)) throw new Error('Mobile number must be a valid 10-digit Indian number');
+      const pl = locs.get(+m.place_id);
+      if (!pl || !['panchayat', 'village'].includes(pl.level)) throw new Error('Choose the panchayat (and village) where the member lives');
+      if (pl.level === 'village') m.village_name = pl.name;
+      m.village_name = tidyVillage(m.village_name);
+      if (m.village_name.length < 2) throw new Error('Enter the village name');
+      m.location_path = pl.path;
+      if (m.booth_id) {
+        const b = booths.find(x => x.id === +m.booth_id);
+        if (!b || b.panchayat_id !== pl.path[3]) throw new Error('This booth is not in the chosen panchayat');
+        m.booth_id = b.id; m.booth_no = b.number;
+      } else { m.booth_id = null; m.booth_no = null; }
+      if (members.some(x => x.id !== m.id && x.phone === m.phone && x.full_name.trim().toLowerCase() === m.full_name.trim().toLowerCase()))
+        throw friendlyError({ code: '23505' });
+    };
+    const notRejected = () => members.filter(m => m.status !== 'rejected');
+
+    return {
+      mode: 'demo',
+      demoAccounts: coords.map(c => ({ email: c.email, role: c.role, area: c.location_id ? locs.get(c.location_id).name : null })),
+      async session() { return current ? { user: { email: current } } : null; },
+      onAuth() {},
+      async sendCode(email) { if (!coords.some(c => c.email === email)) throw new Error('In the demo, use one of the sample logins below.'); return later(); },
+      async verifyCode(email) { current = email; return later(); },
+      async signOut() { current = null; },
+      async me() {
+        const c = meRow(); if (!c) return null;
+        const l = c.location_id ? locs.get(c.location_id) : null;
+        return later({ ...c, location_name: l?.name || null, location_level: l?.level || null });
+      },
+
+      async children(parentId) {
+        return later([...locs.values()].filter(l => l.parent_id === (parentId ?? null)).sort((a, b) => a.name.localeCompare(b.name)));
+      },
+      async locations(ids) { return ids.map(i => locs.get(i)).filter(Boolean); },
+      async addLocation(loc) {
+        const parent = loc.parent_id ? locs.get(+loc.parent_id) : null;
+        const path = parent ? [...parent.path, nextId] : [nextId];
+        if (!(isAdmin() || (loc.level === 'village' && can(path)))) deny();
+        const exp = { district: 'state', block: 'district', panchayat: 'block', village: 'panchayat' }[loc.level];
+        if ((parent?.level || null) !== (exp || null)) throw new Error(`A ${loc.level} must be inside a ${exp}`);
+        if ([...locs.values()].some(l => l.parent_id === (parent?.id ?? null) && l.name.toLowerCase() === loc.name.trim().toLowerCase()))
+          throw new Error(`${loc.name} is already listed here`);
+        const id = add(loc.level, loc.name.trim(), parent?.id, { name_hi: loc.name_hi || null });
+        return later(locs.get(id));
+      },
+      async villageNames(pid) {
+        const listed = [...locs.values()].filter(l => l.parent_id === pid && l.level === 'village').map(l => l.name);
+        const typed = notRejected().filter(m => m.location_path.includes(pid)).map(m => m.village_name);
+        const seen = new Set(listed.map(n => n.toLowerCase()));
+        const out = listed.map(n => ({ village_name: n, listed: true }));
+        for (const n of typed) if (!seen.has(n.toLowerCase())) { seen.add(n.toLowerCase()); out.push({ village_name: n, listed: false }); }
+        return later(out.sort((a, b) => a.village_name.localeCompare(b.village_name)));
+      },
+
+      async booths(pid) { return later(boothsOf(pid).map(({ path, ...b }) => b)); },
+      async boothsByIds(ids) { return ids.map(i => booths.find(b => b.id === i)).filter(Boolean); },
+      async boothBreakdown(locId) {
+        const vis = notRejected().filter(m => can(m.location_path) && m.booth_id);
+        const pname = id => locs.get(id).name;
+        return later(booths.filter(b => b.path.includes(locId)).map(b => {
+          const ms = vis.filter(m => m.booth_id === b.id);
+          return { booth_id: b.id, number: b.number, name: b.name, assembly: b.assembly, panchayat: pname(b.panchayat_id),
+            total: ms.length, verified: ms.filter(m => m.status === 'verified').length, pending: ms.filter(m => m.status === 'pending').length };
+        }));
+      },
+
+      async registerPublic(m) {
+        m = { ...m, id: 'demo-' + Math.random().toString(36).slice(2), status: 'pending', source: 'self', created_at: new Date().toISOString() };
+        validate(m); members.unshift(m); return later();
+      },
+      async addMember(m) {
+        m = { ...m, id: 'demo-' + Math.random().toString(36).slice(2), status: m.status || 'verified', source: 'coordinator', created_at: new Date().toISOString() };
+        validate(m); if (!can(m.location_path)) deny(); members.unshift(m); return later();
+      },
+      async updateMember(id, patch) {
+        const m = members.find(x => x.id === id); if (!m || !can(m.location_path)) deny();
+        const next = { ...m, ...patch }; validate(next); if (!can(next.location_path)) deny();
+        Object.assign(m, next); return later();
+      },
+      async deleteMember(id) {
+        if (!isAdmin()) deny();
+        const i = members.findIndex(x => x.id === id); if (i >= 0) members.splice(i, 1); return later();
+      },
+      async getMember(id) { return { ...members.find(x => x.id === id) }; },
+      async listMembers(f, { offset = 0, limit = 50 } = {}) {
+        const all = members.filter(m => can(m.location_path) && matches(m, f));
+        return later({ rows: all.slice(offset, offset + limit).map(m => ({ ...m })), count: all.length });
+      },
+      async counts(parentId) {
+        const kids = [...locs.values()].filter(l => l.parent_id === (parentId ?? null));
+        const vis = notRejected().filter(m => can(m.location_path));
+        const allPanch = [...locs.values()].filter(l => l.level === 'panchayat');
+        return later(kids.map(l => {
+          const ms = vis.filter(m => m.location_path.includes(l.id));
+          const exp = allPanch.filter(p => p.path.includes(l.id)).reduce((a, p) => a + (p.expected_villages || 0), 0);
+          return { location_id: l.id, name: l.name, level: l.level, subdivision: l.subdivision, total: ms.length,
+            verified: ms.filter(m => m.status === 'verified').length, pending: ms.filter(m => m.status === 'pending').length,
+            villages_reached: new Set(ms.map(m => m.location_path[3] + ':' + m.village_name.toLowerCase())).size,
+            expected_villages: exp || null };
+        }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)));
+      },
+      async villageBreakdown(pid) {
+        const groups = new Map();
+        for (const m of notRejected().filter(x => can(x.location_path) && x.location_path.includes(pid))) {
+          const k = m.village_name.toLowerCase();
+          const g = groups.get(k) || { village_name: m.village_name, total: 0, verified: 0, pending: 0 };
+          g.total++; if (m.status === 'verified') g.verified++; if (m.status === 'pending') g.pending++;
+          groups.set(k, g);
+        }
+        return later([...groups.values()].sort((a, b) => b.total - a.total || a.village_name.localeCompare(b.village_name)));
+      },
+
+      async coordinators() { return later(isAdmin() ? coords.map(c => ({ ...c })) : coords.filter(c => c.email === current)); },
+      async saveCoordinator(c) {
+        if (!isAdmin()) deny();
+        c = { ...c, email: c.email.trim().toLowerCase() };
+        if (c.role !== 'super_admin') {
+          const l = locs.get(+c.location_id);
+          if (!l || l.level !== c.role) throw new Error(`A ${c.role} coordinator must be assigned a ${c.role}`);
+        } else c.location_id = null;
+        const i = coords.findIndex(x => x.email === c.email);
+        if (i >= 0) coords[i] = { ...coords[i], ...c }; else coords.push({ active: true, ...c });
+        return later();
+      },
+      async removeCoordinator(email) {
+        if (!isAdmin()) deny();
+        const i = coords.findIndex(x => x.email === email); if (i >= 0) coords.splice(i, 1); return later();
+      }
+    };
+  }
+
+  window.createDataLayer = cfg => (cfg.SUPABASE_URL ? createLive(cfg) : createDemo());
+})();
+
+</script>
+<script>
+/* =====================================================================
+   Dangi Samaj Portal — app screens
+   ===================================================================== */
+(function () {
+  const C = window.APP_CONFIG;
+  const LEVELS = window.LEVELS;
+  const app = document.getElementById('app');
+  let data, me = null;
+
+  /* ---------------------------------------------------------- helpers */
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = n => Number(n || 0).toLocaleString('en-IN');
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } }
+  };
+
+  const LVL = { state: 'राज्य · State', district: 'जिला · District', block: 'प्रखंड · Block', panchayat: 'पंचायत · Panchayat', village: 'गाँव · Village' };
+  const LVL_PL = { state: 'States', district: 'Districts', block: 'Blocks', panchayat: 'Panchayats', village: 'Villages' };
+  const ROLE = { super_admin: 'Super admin', state: 'State coordinator', district: 'District coordinator', block: 'Block coordinator', panchayat: 'Panchayat coordinator' };
+  const STATUS = { verified: 'Verified', pending: 'Pending', rejected: 'Rejected' };
+  const GENDER = { M: 'Male · पुरुष', F: 'Female · महिला', O: 'Other · अन्य' };
+  const EDU = ['Illiterate / निरक्षर', 'Primary', 'Middle (8th)', 'Matric (10th)', 'Inter (12th)', 'Diploma / ITI', 'Graduate', 'Post-graduate', 'Professional (Engg / Medical / Law)'];
+  const OCC = ['Farmer / किसान', 'Business / व्यापार', 'Govt job / सरकारी नौकरी', 'Private job / निजी नौकरी', 'Teacher / शिक्षक', 'Student / छात्र', 'Labour / मजदूर', 'Homemaker / गृहिणी', 'Retired / सेवानिवृत्त'];
+
+  function toast(msg, kind = 'ok') {
+    const t = document.createElement('div');
+    t.className = 'toast ' + kind; t.textContent = msg; t.setAttribute('role', 'status');
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('out'), 3200);
+    setTimeout(() => t.remove(), 3700);
+  }
+
+  function confirmBox(text, okLabel = 'Confirm', danger = false) {
+    return new Promise(res => {
+      const d = document.createElement('div');
+      d.className = 'modal-back';
+      d.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><p>${esc(text)}</p>
+        <div class="row end"><button class="btn ghost" data-v="0">Cancel</button>
+        <button class="btn ${danger ? 'danger' : 'primary'}" data-v="1">${esc(okLabel)}</button></div></div>`;
+      d.addEventListener('click', e => {
+        const v = e.target.dataset.v;
+        if (v != null || e.target === d) { d.remove(); res(v === '1'); }
+      });
+      document.body.appendChild(d);
+      $('[data-v="1"]', d).focus();
+    });
+  }
+
+  async function copyText(text, label) {
+    try { await navigator.clipboard.writeText(text); toast(`${label} copied`); }
+    catch {
+      const d = document.createElement('div');
+      d.className = 'modal-back';
+      d.innerHTML = `<div class="modal"><p>Select all and copy:</p><textarea id="copy-fallback" rows="8">${esc(text)}</textarea>
+        <div class="row end"><button class="btn primary">Done</button></div></div>`;
+      d.querySelector('button').onclick = () => d.remove();
+      document.body.appendChild(d);
+      const ta = $('#copy-fallback', d); ta.focus(); ta.select();
+    }
+  }
+
+  function download(filename, text, mime) {
+    if (data.mode === 'demo' && window.self !== window.top) {
+      toast('Downloads are turned off in this preview. They work in the real app.', 'warn');
+      return;
+    }
+    const blob = new Blob([text], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  const busy = (btn, on, label) => {
+    if (!btn) return;
+    if (on) { btn.dataset.label = btn.textContent; btn.textContent = label || 'Please wait…'; btn.disabled = true; }
+    else { btn.textContent = btn.dataset.label || btn.textContent; btn.disabled = false; }
+  };
+
+  /* location name helpers */
+  async function pathText(path, from = 'district') {
+    const locs = await data.locations(path);
+    const start = LEVELS.indexOf(from);
+    return locs.filter(l => LEVELS.indexOf(l.level) >= start).reverse().map(l => l.name).join(' · ');
+  }
+  async function primeNames(rows) { await data.locations(rows.flatMap(r => r.location_path || [])); }
+
+  /* ---------------------------------------------------------- location picker
+     Cascading selects: State → District → Block → Panchayat → Village.
+     locked: ids of a coordinator's own area (those levels are fixed). */
+  async function locPicker(box, { upto = 'panchayat', locked = [], allowAll = false, required = false, value = null, onChange = () => {} } = {}) {
+    const lv = LEVELS.slice(0, LEVELS.indexOf(upto) + 1);
+    const vals = Array(lv.length).fill(null);
+    let preset = [];
+    if (value) { const [v] = await data.locations([value]); if (v) preset = v.path; }
+    box.classList.add('loc-grid');
+    box.innerHTML = lv.map((l, i) => `<label class="field"><span>${LVL[l]}${required ? ' *' : ''}</span>
+      <select data-i="${i}" ${required ? 'required' : ''}></select></label>`).join('');
+    const sels = $$('select', box);
+
+    const deepest = () => { for (let i = vals.length - 1; i >= 0; i--) if (vals[i]) return { id: vals[i], level: lv[i], index: i }; return null; };
+
+    async function fill(i) {
+      for (let j = i; j < sels.length; j++) {
+        vals[j] = null; sels[j].innerHTML = `<option value="">${allowAll ? 'All · सभी' : '— चुनें · Select —'}</option>`; sels[j].disabled = true;
+      }
+      if (i >= sels.length) return;
+      const parent = i === 0 ? null : vals[i - 1];
+      if (i > 0 && !parent) return;
+      const items = await data.children(parent);
+      const sel = sels[i];
+      const optHTML = it => `<option value="${it.id}">${esc(it.name)}${it.name_hi ? ' · ' + esc(it.name_hi) : ''}</option>`;
+      if (items.some(it => it.subdivision)) {
+        // blocks: group them under their subdivision (अनुमंडल)
+        const groups = {};
+        items.forEach(it => (groups[it.subdivision || 'Other'] ||= []).push(it));
+        sel.insertAdjacentHTML('beforeend', Object.keys(groups).sort().map(g =>
+          `<optgroup label="${esc(g)} अनुमंडल · subdivision">${groups[g].map(optHTML).join('')}</optgroup>`).join(''));
+      } else sel.insertAdjacentHTML('beforeend', items.map(optHTML).join(''));
+      if (!items.length) { sel.innerHTML = `<option value="">No ${LVL_PL[lv[i]].toLowerCase()} added yet</option>`; return; }
+      sel.disabled = false;
+      let pick = locked[i] ?? preset[i] ?? null;
+      if (pick == null && !allowAll && i <= 1) {
+        const want = i === 0 ? C.DEFAULT_STATE : C.DEFAULT_DISTRICT;
+        const def = items.find(it => it.name === want) || (i === 0 && items.length === 1 ? items[0] : null);
+        if (def) pick = def.id;
+      }
+      if (pick != null && items.some(it => it.id === pick)) {
+        sel.value = String(pick); vals[i] = pick;
+        if (locked[i] != null) sel.disabled = true;
+        await fill(i + 1);
+      }
+    }
+
+    sels.forEach((sel, i) => sel.addEventListener('change', async () => {
+      vals[i] = sel.value ? +sel.value : null;
+      preset = [];
+      await fill(i + 1);
+      onChange(deepest());
+    }));
+    await fill(0);
+    onChange(deepest());
+    return { get: deepest, panchayatId: () => vals[LEVELS.indexOf('panchayat')] || null };
+  }
+
+  const scopeLocked = () => (me && me.path ? me.path : []);
+
+  /* ---------------------------------------------------------- offline queue (public form) */
+  const QKEY = 'dangi-queue';
+  async function flushQueue() {
+    const q = store.get(QKEY, []);
+    if (!q.length || !navigator.onLine) return;
+    const left = [];
+    for (const m of q) {
+      try { await data.registerPublic(m); } catch (e) { if (e.offline) left.push(m); }
+    }
+    store.set(QKEY, left);
+    if (q.length - left.length > 0) toast(`${q.length - left.length} saved registration(s) sent`);
+  }
+
+  /* ---------------------------------------------------------- shell */
+  const TABS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'members', label: 'Members' },
+    { id: 'add', label: 'Add member' },
+    { id: 'message', label: 'Send message' },
+    { id: 'locations', label: 'Locations' },
+    { id: 'coordinators', label: 'Coordinators', admin: true }
+  ];
+  let current = 'register';
+
+  function shell(view) {
+    const demo = data.mode === 'demo';
+    const area = me ? (me.role === 'super_admin' ? 'All India' : me.location_name) : '';
+    app.innerHTML = `
+      ${demo ? `<div class="demo-bar"><div class="wrap">Demo mode with sample data. Nothing here is real. Connect Supabase in <code>config.js</code> to go live.</div></div>` : ''}
+      <header class="top"><div class="wrap top-in">
+        <button class="brand" data-go="${me ? 'overview' : 'register'}" aria-label="Home">
+          <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="brand-text"><b>${esc(C.APP_NAME)}</b><small>${esc(C.APP_NAME_EN)}</small></span>
+        </button>
+        <div class="top-right">${me
+          ? `<span class="who"><b>${esc(ROLE[me.role])}</b><small>${esc(area)}</small></span><button class="btn small on-dark" id="signout">Sign out</button>`
+          : (view === 'login' ? `<button class="btn small on-dark" data-go="register">Registration form</button>` : `<button class="btn small on-dark" data-go="login">Coordinator login</button>`)}
+        </div></div>
+        ${me ? `<nav class="tabs" aria-label="Sections"><div class="wrap tabs-in">${TABS.filter(t => !t.admin || me.role === 'super_admin')
+          .map(t => `<button class="tab ${t.id === view ? 'on' : ''}" data-go="${t.id}">${t.label}</button>`).join('')}</div></nav>` : ''}
+      </header>
+      <main class="wrap main" id="view"></main>
+      <footer class="wrap foot">${esc(C.APP_NAME_EN)} · data is visible only to authorised coordinators of each area</footer>`;
+    $$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+    const so = $('#signout');
+    if (so) so.onclick = async () => { await data.signOut(); me = null; resetViews(); go('register'); };
+    return $('#view');
+  }
+
+  async function go(view, opts = {}) {
+    const priv = TABS.some(t => t.id === view);
+    if (priv && !me) view = 'login';
+    if (view === 'coordinators' && me?.role !== 'super_admin') view = 'overview';
+    if (view === 'register' && me && !opts.force) view = 'overview';
+    current = view;
+    try { if (location.hash.slice(1) !== view) history.replaceState(null, '', '#' + view); } catch { /* sandboxed */ }
+    const root = shell(view);
+    root.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+      await ({ register: viewRegister, login: viewLogin, overview: viewOverview, members: viewMembers, add: viewAdd,
+        message: viewMessage, locations: viewLocations, coordinators: viewCoordinators }[view] || viewRegister)(root, opts);
+    } catch (e) {
+      root.innerHTML = `<div class="card error-card"><h2>Something went wrong</h2><p>${esc(e.message)}</p>
+        <button class="btn primary" id="retry">Try again</button></div>`;
+      $('#retry').onclick = () => go(view, opts);
+    }
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------------------------------------------------------- member form (shared) */
+  function memberFormHTML(m = {}, { coordinator = false } = {}) {
+    const opt = (list, v) => list.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
+    return `
+      <fieldset class="group"><legend>स्थान · Location</legend><div id="loc"></div>
+        <label class="field"><span>गाँव का नाम · Village name *</span>
+          <input id="f-village" list="village-list" required autocomplete="off" value="${esc(m.village_name)}" placeholder="पंचायत चुनें, फिर गाँव लिखें · choose panchayat, then type village">
+          <datalist id="village-list"></datalist></label>
+        <p class="hint" id="village-hint" hidden></p>
+        <label class="field" id="booth-wrap" hidden><span>मतदान बूथ · Polling booth <small class="muted">(पता हो तो · if known)</small></span>
+          <select id="f-booth"></select></label>
+      </fieldset>
+      <fieldset class="group"><legend>व्यक्तिगत जानकारी · Personal details</legend>
+        <div class="grid2">
+          <label class="field span2"><span>पूरा नाम · Full name *</span><input id="f-name" required minlength="2" autocomplete="name" value="${esc(m.full_name)}" placeholder="जैसे: Ramesh Kumar Dangi"></label>
+          <label class="field span2"><span>पिता / पति का नाम · Father's / husband's name</span><input id="f-guardian" value="${esc(m.guardian_name)}"></label>
+          <label class="field"><span>लिंग · Gender *</span><select id="f-gender" required><option value="">— Select —</option>
+            ${Object.entries(GENDER).map(([k, v]) => `<option value="${k}" ${m.gender === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label class="field"><span>उम्र · Age</span><input id="f-age" type="number" inputmode="numeric" min="0" max="120" value="${esc(m.age)}"></label>
+        </div>
+      </fieldset>
+      <fieldset class="group"><legend>संपर्क · Contact</legend>
+        <div class="grid2">
+          <label class="field"><span>मोबाइल नंबर · Mobile *</span><input id="f-phone" type="tel" inputmode="numeric" required placeholder="10 अंक · 10 digits" value="${esc(m.phone)}"></label>
+          <label class="field"><span>व्हाट्सऐप नंबर · WhatsApp</span><input id="f-wa" type="tel" inputmode="numeric" placeholder="अगर अलग हो · if different" value="${m.whatsapp && m.whatsapp !== m.phone ? esc(m.whatsapp) : ''}"></label>
+          <label class="field span2"><span>पता / टोला / वार्ड · Address, tola or ward</span><input id="f-address" value="${esc(m.address)}"></label>
+        </div>
+      </fieldset>
+      <fieldset class="group"><legend>परिवार और काम · Family and work</legend>
+        <div class="grid2">
+          <label class="field"><span>शिक्षा · Education</span><select id="f-edu"><option value="">— Select —</option>${opt(EDU, m.education)}</select></label>
+          <label class="field"><span>व्यवसाय · Occupation</span><input id="f-occ" list="occ-list" value="${esc(m.occupation)}"><datalist id="occ-list">${OCC.map(o => `<option value="${esc(o)}">`).join('')}</datalist></label>
+          <label class="field"><span>परिवार के सदस्य · Family members</span><input id="f-family" type="number" inputmode="numeric" min="1" max="100" value="${esc(m.family_size)}"></label>
+          ${coordinator ? `<label class="field"><span>स्थिति · Status</span><select id="f-status">${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${(m.status || 'verified') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>` : ''}
+          ${coordinator ? `<label class="field span2"><span>टिप्पणी · Notes (only coordinators see this)</span><input id="f-notes" value="${esc(m.notes)}"></label>` : ''}
+        </div>
+      </fieldset>
+      <label class="consent"><input type="checkbox" id="f-consent" required ${m.consent ? 'checked' : ''}>
+        <span>मैं सहमत हूँ कि मेरी जानकारी दांगी समाज के रिकॉर्ड में रखी जाए और समाज की सूचनाएँ मुझे SMS / WhatsApp पर भेजी जाएँ।
+        <small>I agree that my details are kept in the Dangi Samaj records and that I may receive community messages on SMS or WhatsApp. I can ask a coordinator to remove my details at any time.</small></span></label>`;
+  }
+
+  /* the village part of a polling-station name: "Madhya Vidyalay, Hurmeth (Bayan Bhaag)" -> "Hurmeth" */
+  function boothPlace(name) {
+    if (!name || !name.includes(',')) return null;
+    const v = name.split(',').pop().replace(/\(.*$/, '').replace(/\b(Awasthist|Isthit|Sthit)\b.*$/i, '').trim();
+    return v.length >= 2 ? v : null;
+  }
+  const boothLabel = b => `${b.number} · ${b.name}`;
+
+  /* location picker + typed village with suggestions + polling booth of the chosen panchayat */
+  async function mountPlace(root, { locked = [], placeId = null, boothId = null } = {}) {
+    let listed = [];            // official villages of this panchayat, if any were added
+    let booths = [];
+    let currentP;
+    const input = $('#f-village', root), dl = $('#village-list', root), hint = $('#village-hint', root);
+    const bwrap = $('#booth-wrap', root), bsel = $('#f-booth', root);
+    async function onPanchayat(pid) {
+      if (pid === currentP) return;
+      currentP = pid; dl.innerHTML = ''; hint.hidden = true; listed = []; booths = []; bwrap.hidden = true; bsel.innerHTML = '';
+      input.disabled = !pid;
+      if (!pid) return;
+      const [names, kids, [p], bs] = await Promise.all([data.villageNames(pid), data.children(pid), data.locations([pid]), data.booths(pid)]);
+      if (pid !== currentP) return;
+      listed = kids.filter(k => k.level === 'village');
+      booths = bs;
+      const sugg = new Map();
+      names.forEach(n => sugg.set(n.village_name.toLowerCase(), n.village_name));
+      bs.map(b => boothPlace(b.name)).filter(Boolean).forEach(v => { if (!sugg.has(v.toLowerCase())) sugg.set(v.toLowerCase(), v); });
+      dl.innerHTML = [...sugg.values()].sort().map(v => `<option value="${esc(v)}">`).join('');
+      const exp = p?.expected_villages;
+      hint.innerHTML = `${esc(p.name)}${/nagar/i.test(p.name) ? '' : ' पंचायत'}${exp ? ` में ${exp} गाँव हैं · has ${exp} villages on record` : ''}${bs.length ? ` · ${bs.length} polling booths` : ''}.
+        ${names.length ? `Already registered from: <b>${names.slice(0, 8).map(n => esc(n.village_name)).join(', ')}${names.length > 8 ? '…' : ''}</b>. Pick one if it is yours, or type your ${/nagar/i.test(p.name) ? 'ward or mohalla' : 'village'}.` : `Type your ${/nagar/i.test(p.name) ? 'ward or mohalla' : 'village name'}.`}`;
+      hint.hidden = false;
+      if (bs.length) {
+        bsel.innerHTML = `<option value="">पता नहीं · Don't know</option>` + bs.map(b => `<option value="${b.id}">${esc(boothLabel(b))}</option>`).join('');
+        if (boothId && bs.some(b => b.id === boothId)) bsel.value = String(boothId);
+        bwrap.hidden = false;
+      }
+    }
+    bsel.addEventListener('change', () => {
+      const b = booths.find(x => x.id === +bsel.value);
+      if (b && !input.value.trim()) { const v = boothPlace(b.name); if (v) input.value = v; }
+    });
+    const picker = await locPicker($('#loc', root), {
+      required: true, locked, value: placeId,
+      onChange: d => onPanchayat(d && d.level === 'panchayat' ? d.id : null)
+    });
+    await onPanchayat(picker.panchayatId());
+    return {
+      get() {
+        const pid = picker.panchayatId();
+        if (!pid) throw new Error('कृपया प्रखंड और पंचायत चुनें · Please choose the block and panchayat.');
+        const name = tidyVillage(input.value);
+        if (name.length < 2) throw new Error('कृपया गाँव का नाम लिखें · Please type the village name.');
+        const official = listed.find(v => v.name.toLowerCase() === name.toLowerCase());
+        return { place_id: official ? official.id : pid, village_name: official ? official.name : name,
+          booth_id: bsel.value && !bwrap.hidden ? +bsel.value : null };
+      }
+    };
+  }
+
+  function readMember(root, place) {
+    const v = id => $(id, root)?.value.trim() ?? '';
+    const n = id => (v(id) ? +v(id) : null);
+    const m = {
+      full_name: v('#f-name'), guardian_name: v('#f-guardian') || null, gender: v('#f-gender') || null,
+      age: n('#f-age'), phone: cleanPhone(v('#f-phone')), whatsapp: cleanPhone(v('#f-wa')) || null,
+      address: v('#f-address') || null, education: v('#f-edu') || null, occupation: v('#f-occ') || null,
+      family_size: n('#f-family'), consent: $('#f-consent', root).checked,
+      ...place.get()
+    };
+    if ($('#f-status', root)) m.status = v('#f-status');
+    if ($('#f-notes', root)) m.notes = v('#f-notes') || null;
+    if (!/^[6-9]\d{9}$/.test(m.phone)) throw new Error('मोबाइल नंबर 10 अंकों का होना चाहिए · Enter a valid 10-digit mobile number.');
+    if (m.whatsapp && !/^[6-9]\d{9}$/.test(m.whatsapp)) throw new Error('WhatsApp number must be 10 digits.');
+    if (!m.consent) throw new Error('सहमति ज़रूरी है · Please tick the consent box.');
+    return m;
+  }
+
+  /* ---------------------------------------------------------- PUBLIC: registration */
+  async function viewRegister(root) {
+    const queued = store.get(QKEY, []).length;
+    root.innerHTML = `
+      <section class="intro">
+        <p class="eyebrow">सदस्य पंजीकरण · Member registration</p>
+        <h1>दांगी समाज परिवार से जुड़ें</h1>
+        <p class="lede">Fill this form once for each adult member. Your details reach only the coordinators of your own district, block and panchayat.</p>
+      </section>
+      ${queued ? `<div class="note warn">${queued} form(s) are saved on this phone and will be sent when the internet is back.</div>` : ''}
+      <form class="card form" id="reg" novalidate>${memberFormHTML()}
+        <div class="row end"><button class="btn primary big" type="submit">पंजीकरण करें · Register</button></div>
+      </form>`;
+    const picker = await mountPlace(root);
+    $('#reg', root).addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = e.submitter || $('button[type=submit]', root);
+      let m;
+      try { m = readMember(root, picker); } catch (err) { toast(err.message, 'bad'); return; }
+      busy(btn, true, 'Saving…');
+      try {
+        await data.registerPublic(m);
+        done(m, false);
+      } catch (err) {
+        if (err.offline || !navigator.onLine) { store.set(QKEY, [...store.get(QKEY, []), m]); done(m, true); }
+        else toast(err.message, 'bad');
+      } finally { busy(btn, false); }
+    });
+
+    function done(m, offline) {
+      root.innerHTML = `<div class="card success">
+        <div class="tick" aria-hidden="true"></div>
+        <h2>${offline ? 'फ़ॉर्म इस फ़ोन में सेव हो गया' : 'धन्यवाद! पंजीकरण हो गया'}</h2>
+        <p>${offline ? 'There is no internet right now. The form is saved on this phone and will be sent automatically when you are back online. Keep this page open or open it again later.'
+          : `${esc(m.full_name)} has been registered. A coordinator from your area will verify the details.`}</p>
+        <div class="row center"><button class="btn primary" id="again">एक और सदस्य जोड़ें · Register another</button></div></div>`;
+      $('#again').onclick = () => go('register', { force: true });
+    }
+  }
+
+  /* ---------------------------------------------------------- PUBLIC: login */
+  async function viewLogin(root) {
+    const demo = data.mode === 'demo';
+    root.innerHTML = `<div class="card narrow">
+      <p class="eyebrow">Coordinators only</p><h1 class="h2">Coordinator login</h1>
+      <p class="muted">Enter the email address the super admin registered for you. We'll email you a login link.</p>
+      <form id="step1" class="stack"><label class="field"><span>Email</span><input id="l-email" type="email" required autocomplete="email"></label>
+        <button class="btn primary" type="submit">Send code</button></form>
+      <form id="step2" class="stack" hidden>
+        <div class="note ok-note"><b>Check your email.</b> Open the message from Supabase on this phone or computer and tap <b>Log In</b> / <b>Confirm your mail</b>. You'll come straight back here, logged in. It can take a minute to arrive; look in Spam too.</div>
+        <label class="field"><span>Or type the code, if your email shows one</span>
+        <input id="l-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required></label>
+        <button class="btn primary" type="submit">Log in</button>
+        <button class="btn ghost" type="button" id="l-back">Use a different email</button></form>
+      ${demo ? `<div class="demo-logins"><p class="muted">Demo: log in as</p>${data.demoAccounts.map(a =>
+        `<button class="btn" data-demo="${a.email}">${ROLE[a.role]}${a.area ? ' · ' + esc(a.area) : ''}</button>`).join('')}</div>` : ''}
+    </div>`;
+    let email = '';
+    const finish = async () => {
+      me = await data.me();
+      if (!me) {
+        toast('This email is not registered as a coordinator. Ask the super admin to add you.', 'bad');
+        await data.signOut(); return;
+      }
+      resetViews(); await loadScope(); go('overview');
+    };
+    $('#step1').onsubmit = async e => {
+      e.preventDefault(); email = $('#l-email').value.trim().toLowerCase();
+      const b = e.submitter; busy(b, true, 'Sending…');
+      try { await data.sendCode(email); $('#step1').hidden = true; $('#step2').hidden = false; $('#l-code').focus(); toast('Login link sent. Check your email.'); }
+      catch (err) { toast(err.message, 'bad'); } finally { busy(b, false); }
+    };
+    $('#step2').onsubmit = async e => {
+      e.preventDefault(); const b = e.submitter; busy(b, true, 'Checking…');
+      try { await data.verifyCode(email, $('#l-code').value.trim()); await finish(); }
+      catch (err) { toast(err.message, 'bad'); } finally { busy(b, false); }
+    };
+    $('#l-back').onclick = () => { $('#step1').hidden = false; $('#step2').hidden = true; };
+    $$('[data-demo]').forEach(b => b.onclick = async () => { await data.verifyCode(b.dataset.demo); await finish(); });
+  }
+
+  function resetViews() { ['ov-node', 'ov-by', 'mem-filter', 'msg-filter'].forEach(k => store.set(k, null)); }
+
+  async function loadScope() {
+    if (me && me.location_id) { const [l] = await data.locations([me.location_id]); me.path = l ? l.path : []; }
+    else if (me) me.path = [];
+  }
+
+  /* ---------------------------------------------------------- OVERVIEW (drill-down) */
+  async function viewOverview(root, { node, by } = {}) {
+    const scopeId = me.location_id ?? null;
+    node = node ?? store.get('ov-node', null) ?? scopeId;
+    // never go above the coordinator's own area
+    let nodeLoc = node ? (await data.locations([node]))[0] : null;
+    if (scopeId && (!nodeLoc || !nodeLoc.path.includes(scopeId))) { node = scopeId; nodeLoc = (await data.locations([node]))[0]; }
+    store.set('ov-node', node);
+
+    if (nodeLoc?.level === 'village') { node = nodeLoc.parent_id; nodeLoc = (await data.locations([node]))[0]; store.set('ov-node', node); }
+    const atPanchayat = nodeLoc?.level === 'panchayat';
+    const rows = atPanchayat ? [] : await data.counts(node);
+    const vrows = atPanchayat ? await data.villageBreakdown(node) : [];
+    const crumbs = [];
+    if (!scopeId) crumbs.push({ id: null, name: 'All India' });
+    if (nodeLoc) {
+      const anc = await data.locations(nodeLoc.path);
+      anc.forEach(a => { if (!scopeId || a.path.includes(scopeId)) crumbs.push({ id: a.id, name: a.name }); });
+    }
+    const boothRows = nodeLoc && ['district', 'block', 'panchayat'].includes(nodeLoc.level) ? await data.boothBreakdown(node) : [];
+    by = boothRows.length ? (by || store.get('ov-by', 'area')) : 'area';
+    store.set('ov-by', by);
+    const sum = list => list.reduce((a, r) => ({ total: a.total + r.total, verified: a.verified + r.verified, pending: a.pending + r.pending }), { total: 0, verified: 0, pending: 0 });
+    let tot;
+    if (atPanchayat) tot = sum(vrows);
+    else if (rows.length) tot = sum(rows);
+    else {
+      const f = { locationId: node || undefined, excludeRejected: true };
+      const [all, ver, pen] = await Promise.all([data.listMembers(f, { limit: 1 }), data.listMembers({ ...f, status: 'verified' }, { limit: 1 }), data.listMembers({ ...f, status: 'pending' }, { limit: 1 })]);
+      tot = { total: all.count, verified: ver.count, pending: pen.count };
+    }
+    const reached = atPanchayat ? vrows.length : rows.reduce((a, r) => a + (r.villages_reached || 0), 0);
+    const expected = atPanchayat ? nodeLoc.expected_villages : rows.reduce((a, r) => a + (r.expected_villages || 0), 0) || null;
+    const childLevel = rows[0]?.level;
+    const max = Math.max(1, ...(atPanchayat ? vrows : rows).map(r => r.total));
+    const bar = r => `<td class="bar-col"><span class="bar"><i style="width:${(r.total / max * 100).toFixed(1)}%"></i><i class="v" style="width:${(r.verified / max * 100).toFixed(1)}%"></i></span></td>`;
+    const vr = r => (r.expected_villages ? `${num(r.villages_reached)}<small> / ${num(r.expected_villages)}</small>` : num(r.villages_reached));
+    const rowHTML = r => `<tr data-node="${r.location_id}" tabindex="0" class="${r.total ? '' : 'zero'}">
+      <td>${esc(r.name)}</td><td class="num">${num(r.total)}</td><td class="num hide-sm">${num(r.verified)}</td><td class="num hide-sm">${num(r.pending)}</td>
+      <td class="num">${vr(r)}</td>${bar(r)}</tr>`;
+
+    // blocks: show them under their subdivision with a subtotal line
+    let body;
+    if (rows.some(r => r.subdivision)) {
+      const groups = {};
+      rows.forEach(r => (groups[r.subdivision || 'Other'] ||= []).push(r));
+      body = Object.entries(groups).sort((a, b) => sum(b[1]).total - sum(a[1]).total || a[0].localeCompare(b[0])).map(([g, list]) => {
+        const t = sum(list);
+        return `<tr class="grp"><td colspan="6">${esc(g)} अनुमंडल · subdivision <span>${num(t.total)} members · ${list.length} blocks</span></td></tr>${list.map(rowHTML).join('')}`;
+      }).join('');
+    } else body = rows.map(rowHTML).join('');
+
+    const head = name => `<thead><tr><th>${name}</th><th class="num">Members</th><th class="num hide-sm">Verified</th><th class="num hide-sm">Pending</th>`;
+    let table = '';
+    if (rows.length) {
+      table = `<section class="card flush">
+        <div class="table-head"><h2 class="h3">By ${LVL_PL[childLevel].toLowerCase().replace(/s$/, '')}</h2><span class="muted small">Tap a row to open it</span></div>
+        <div class="tbl-wrap"><table class="tbl drill">${head(LVL[childLevel])}<th class="num">Villages reached</th><th class="bar-col" aria-hidden="true"></th></tr></thead>
+        <tbody>${body}</tbody></table></div></section>`;
+    } else if (atPanchayat && vrows.length) {
+      table = `<section class="card flush">
+        <div class="table-head"><h2 class="h3">By village</h2><span class="muted small">Names as typed by members · tap to see who is registered</span></div>
+        <div class="tbl-wrap"><table class="tbl drill">${head(LVL.village)}<th class="bar-col" aria-hidden="true"></th></tr></thead>
+        <tbody>${vrows.map(r => `<tr data-village="${esc(r.village_name)}" tabindex="0"><td>${esc(r.village_name)}</td><td class="num">${num(r.total)}</td>
+          <td class="num hide-sm">${num(r.verified)}</td><td class="num hide-sm">${num(r.pending)}</td>${bar(r)}</tr>`).join('')}</tbody></table></div></section>
+        <p class="muted small">If one village appears under two spellings, open its members and correct the village name with Edit.</p>`;
+    } else {
+      table = `<div class="card empty"><p>${atPanchayat ? 'No one from this panchayat has registered yet. Share the registration link in its WhatsApp groups.' : 'No areas have been added below this one yet. Add them under Locations.'}</p></div>`;
+    }
+
+    if (by === 'booth') {
+      const bmax = Math.max(1, ...boothRows.map(r => r.total));
+      const showP = nodeLoc.level !== 'panchayat';
+      const groups = {};
+      boothRows.forEach(r => (groups[r.assembly] ||= []).push(r));
+      const multi = Object.keys(groups).length > 1;
+      table = `<section class="card flush">
+        <div class="table-head"><h2 class="h3">By polling booth</h2><span class="muted small">${boothRows.length} booths · tap to see who is registered</span></div>
+        <div class="tbl-wrap"><table class="tbl drill booths">
+          <thead><tr><th class="num">No.</th><th>Polling station</th>${showP ? '<th class="hide-sm">Panchayat</th>' : ''}<th class="num">Members</th><th class="num hide-sm">Verified</th><th class="num hide-sm">Pending</th><th class="bar-col" aria-hidden="true"></th></tr></thead>
+          <tbody>${Object.entries(groups).map(([a, list]) => `${multi ? `<tr class="grp"><td colspan="${showP ? 7 : 6}">${esc(a)} Vidhan Sabha</td></tr>` : ''}${list.map(r => `
+            <tr data-booth="${r.booth_id}" tabindex="0" class="${r.total ? '' : 'zero'}"><td class="num mono">${r.number}</td><td>${esc(r.name)}</td>
+            ${showP ? `<td class="hide-sm small">${esc(r.panchayat)}</td>` : ''}<td class="num">${num(r.total)}</td><td class="num hide-sm">${num(r.verified)}</td><td class="num hide-sm">${num(r.pending)}</td>
+            <td class="bar-col"><span class="bar"><i style="width:${(r.total / bmax * 100).toFixed(1)}%"></i><i class="v" style="width:${(r.verified / bmax * 100).toFixed(1)}%"></i></span></td></tr>`).join('')}`).join('')}</tbody>
+        </table></div></section>
+        <p class="muted small">Booth counts include only members who chose their booth on the form. Coordinators can add the booth with Edit.</p>`;
+    }
+    const assemblies = [...new Set(boothRows.map(r => r.assembly))];
+    const toggle = boothRows.length ? `<div class="seg" role="group" aria-label="Show">
+        <button class="${by === 'area' ? 'on' : ''}" data-by="area">${atPanchayat ? 'By village' : 'By ' + (LVL_PL[childLevel] || 'area').toLowerCase().replace(/s$/, '')}</button>
+        <button class="${by === 'booth' ? 'on' : ''}" data-by="booth">By polling booth</button></div>` : '';
+    const boothsWith = boothRows.filter(r => r.total > 0).length;
+
+    root.innerHTML = `
+      <nav class="crumbs" aria-label="Area">${crumbs.map((c, i) => i === crumbs.length - 1
+        ? `<span aria-current="page">${esc(c.name)}</span>` : `<button data-node="${c.id ?? ''}">${esc(c.name)}</button><i>›</i>`).join('')}</nav>
+      <div class="head-row"><div><h1 class="h2">${esc(nodeLoc?.name || 'All India')}</h1>
+        ${nodeLoc ? `<p class="muted small sub">${LVL[nodeLoc.level]}${nodeLoc.subdivision ? ` · ${esc(nodeLoc.subdivision)} subdivision` : ''}</p>` : ''}</div>
+        <div class="row"><button class="btn" id="ov-members">View members</button><button class="btn primary" id="ov-msg">Message these members</button></div></div>
+      ${assemblies.length ? `<p class="muted small sub">Polling booths: ${assemblies.map(a => esc(a) + ' Vidhan Sabha').join(', ')}</p>` : ''}
+      <div class="stats">
+        <div class="stat"><span>Registered members</span><b>${num(tot.total)}</b></div>
+        <div class="stat ok"><span>Verified</span><b>${num(tot.verified)}</b></div>
+        <div class="stat warn"><span>Waiting for verification</span><b>${num(tot.pending)}</b>${tot.pending ? '<button class="link" id="ov-pending">Review now →</button>' : ''}</div>
+        <div class="stat"><span>Villages reached</span><b>${num(reached)}${expected ? `<small> of ${num(expected)}</small>` : ''}</b>
+          ${expected ? `<span class="meter" aria-hidden="true"><i style="width:${Math.min(100, reached / expected * 100).toFixed(1)}%"></i></span>` : ''}</div>
+        ${boothRows.length ? `<div class="stat"><span>Booths with members</span><b>${num(boothsWith)}<small> of ${num(boothRows.length)}</small></b>
+          <span class="meter" aria-hidden="true"><i style="width:${(boothsWith / boothRows.length * 100).toFixed(1)}%"></i></span></div>` : ''}
+      </div>
+      ${toggle}
+      ${table}`;
+    $$('[data-by]', root).forEach(b => b.onclick = () => go('overview', { node, by: b.dataset.by }));
+    $$('[data-booth]', root).forEach(el => {
+      const openB = () => go('members', { filter: { locationId: node, boothId: +el.dataset.booth } });
+      el.addEventListener('click', openB);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') openB(); });
+    });
+    $$('[data-village]', root).forEach(el => {
+      const openV = () => go('members', { filter: { locationId: node, village: el.dataset.village } });
+      el.addEventListener('click', openV);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') openV(); });
+    });
+
+    const open = id => go('overview', { node: id === '' ? null : +id });
+    $$('[data-node]', root).forEach(el => {
+      el.addEventListener('click', () => open(el.dataset.node));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') open(el.dataset.node); });
+    });
+    $('#ov-members').onclick = () => go('members', { filter: { locationId: node } });
+    $('#ov-msg').onclick = () => go('message', { filter: { locationId: node } });
+    const p = $('#ov-pending'); if (p) p.onclick = () => go('members', { filter: { locationId: node, status: 'pending' } });
+  }
+
+  /* ---------------------------------------------------------- MEMBERS */
+  async function filterBar(root, f, { showStatus = true, onApply }) {
+    root.innerHTML = `<form class="card filters" id="flt">
+      <div id="f-loc"></div>
+      <div class="grid-auto">
+        <label class="field"><span>Search name or mobile</span><input id="q" type="search" value="${esc(f.q)}"></label>
+        <label class="field"><span>Village · गाँव</span><input id="vf" type="search" value="${esc(f.village)}"></label>
+        <label class="field"><span>Booth no. · बूथ</span><input id="bf" type="number" inputmode="numeric" min="1" value="${esc(f.boothNo)}"></label>
+        ${showStatus ? `<label class="field"><span>Status</span><select id="st"><option value="">All except rejected</option>
+          ${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>` : ''}
+        <label class="field"><span>Gender</span><select id="gd"><option value="">All</option>
+          ${Object.entries(GENDER).map(([k, v]) => `<option value="${k}" ${f.gender === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        <label class="field"><span>Age from</span><input id="a1" type="number" min="0" max="120" value="${esc(f.ageMin)}"></label>
+        <label class="field"><span>Age to</span><input id="a2" type="number" min="0" max="120" value="${esc(f.ageMax)}"></label>
+        <label class="field"><span>Occupation</span><input id="oc" list="occ-list2" value="${esc(f.occupation)}"><datalist id="occ-list2">${OCC.map(o => `<option value="${esc(o)}">`).join('')}</datalist></label>
+      </div>
+      <div class="row end"><button type="button" class="btn ghost" id="clr">Clear</button><button class="btn primary" type="submit">Apply filters</button></div></form>`;
+    const picker = await locPicker($('#f-loc', root), { allowAll: true, locked: scopeLocked(), value: f.locationId });
+    $('#clr', root).onclick = () => onApply({ locationId: me.location_id || null });
+    $('#flt', root).onsubmit = e => {
+      e.preventDefault();
+      const g = picker.get();
+      const v = id => $(id, root)?.value.trim() || '';
+      onApply({
+        locationId: g ? g.id : (me.location_id || null), q: v('#q'), village: v('#vf'), boothNo: v('#bf') ? +v('#bf') : null, status: v('#st'), gender: v('#gd'),
+        ageMin: v('#a1') ? +v('#a1') : null, ageMax: v('#a2') ? +v('#a2') : null, occupation: v('#oc')
+      });
+    };
+  }
+
+  async function viewMembers(root, { filter, page = 0 } = {}) {
+    const f = filter || store.get('mem-filter', null) || { locationId: me.location_id || null };
+    store.set('mem-filter', f);
+    const q = { ...f, excludeRejected: !f.status };
+    const size = 50;
+    const { rows, count } = await data.listMembers(q, { offset: page * size, limit: size });
+    await primeNames(rows);
+    const places = await Promise.all(rows.map(async r => [r.village_name, await pathText(r.location_path.slice(0, 4), 'block')].filter(Boolean).join(' · ')));
+    const admin = me.role === 'super_admin';
+
+    root.innerHTML = `<div class="head-row"><h1 class="h2">Members</h1>
+      <div class="row"><span class="muted">${num(count)} found</span><button class="btn primary" id="m-msg">Message these</button></div></div>
+      <div id="fbar"></div>
+      ${rows.length ? `<ul class="mlist">${rows.map((m, i) => `<li class="mrow">
+        <div class="m-main"><div class="m-name">${esc(m.full_name)} <span class="pill ${m.status}">${STATUS[m.status]}</span>${m.booth_no ? ` <span class="pill booth">Booth ${m.booth_no}</span>` : ''}</div>
+          <div class="m-sub">${m.guardian_name ? `पिता/पति: ${esc(m.guardian_name)} · ` : ''}${[m.gender && GENDER[m.gender].split(' ·')[0], m.age && m.age + ' yrs', m.occupation && m.occupation.split(' /')[0]].filter(Boolean).map(esc).join(' · ')}</div>
+          <div class="m-place">${esc(places[i])}</div></div>
+        <div class="m-phone"><span class="mono">${esc(m.phone)}</span>
+          <a class="link small" href="https://wa.me/${C.COUNTRY_CODE}${esc(m.whatsapp || m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>
+        <div class="m-act">
+          ${m.status !== 'verified' ? `<button class="btn small ok" data-act="verified" data-id="${m.id}">Verify</button>` : ''}
+          ${m.status === 'pending' ? `<button class="btn small ghost" data-act="rejected" data-id="${m.id}">Reject</button>` : ''}
+          <button class="btn small ghost" data-act="edit" data-id="${m.id}">Edit</button>
+          ${admin ? `<button class="btn small ghost danger-text" data-act="delete" data-id="${m.id}">Delete</button>` : ''}
+        </div></li>`).join('')}</ul>
+        <div class="pager">${page > 0 ? '<button class="btn" id="prev">← Previous</button>' : '<span></span>'}
+          <span class="muted">Page ${page + 1} of ${Math.max(1, Math.ceil(count / size))}</span>
+          ${(page + 1) * size < count ? '<button class="btn" id="next">Next →</button>' : '<span></span>'}</div>`
+        : `<div class="card empty"><p>No members match these filters.</p></div>`}`;
+
+    await filterBar($('#fbar', root), f, { onApply: nf => go('members', { filter: nf }) });
+    $('#m-msg').onclick = () => go('message', { filter: f });
+    const pv = $('#prev', root), nx = $('#next', root);
+    if (pv) pv.onclick = () => go('members', { filter: f, page: page - 1 });
+    if (nx) nx.onclick = () => go('members', { filter: f, page: page + 1 });
+    $$('[data-act]', root).forEach(b => b.onclick = async () => {
+      const { act, id } = b.dataset;
+      try {
+        if (act === 'edit') return go('add', { editId: id });
+        if (act === 'delete') {
+          if (!(await confirmBox('Delete this member permanently? This cannot be undone.', 'Delete', true))) return;
+          await data.deleteMember(id); toast('Member deleted');
+        } else { await data.updateMember(id, { status: act }); toast(act === 'verified' ? 'Marked as verified' : 'Marked as rejected'); }
+        go('members', { filter: f, page });
+      } catch (err) { toast(err.message, 'bad'); }
+    });
+  }
+
+  /* ---------------------------------------------------------- ADD / EDIT MEMBER */
+  async function viewAdd(root, { editId } = {}) {
+    const m = editId ? await data.getMember(editId) : { consent: false };
+    root.innerHTML = `<div class="head-row"><h1 class="h2">${editId ? 'Edit member' : 'Add a member'}</h1></div>
+      <p class="muted">${editId ? 'Correct the details and save.' : 'Use this when you collect details in person. Read the consent line aloud and tick it only if the person agrees.'}</p>
+      <form class="card form" id="addf" novalidate>${memberFormHTML(m, { coordinator: true })}
+        <div class="row end">${editId ? '<button type="button" class="btn ghost" id="cancel">Cancel</button>' : ''}
+        <button class="btn primary big" type="submit">${editId ? 'Save changes' : 'Add member'}</button></div></form>`;
+    const picker = await mountPlace(root, { locked: scopeLocked(), placeId: m.place_id, boothId: m.booth_id });
+    const c = $('#cancel', root); if (c) c.onclick = () => go('members');
+    $('#addf', root).onsubmit = async e => {
+      e.preventDefault();
+      let nm; try { nm = readMember(root, picker); } catch (err) { toast(err.message, 'bad'); return; }
+      const b = e.submitter; busy(b, true, 'Saving…');
+      try {
+        if (editId) { await data.updateMember(editId, nm); toast('Changes saved'); go('members'); }
+        else { await data.addMember(nm); toast(`${nm.full_name} added`); go('add'); }
+      } catch (err) { toast(err.message, 'bad'); } finally { busy(b, false); }
+    };
+  }
+
+  /* ---------------------------------------------------------- SEND MESSAGE */
+  async function fetchAll(f) {
+    const out = []; const size = 1000;
+    for (let off = 0; off < 50000; off += size) {
+      const { rows } = await data.listMembers(f, { offset: off, limit: size });
+      out.push(...rows); if (rows.length < size) break;
+    }
+    return out;
+  }
+
+  async function viewMessage(root, { filter } = {}) {
+    const f = filter || store.get('msg-filter', null) || { locationId: me.location_id || null, status: 'verified' };
+    store.set('msg-filter', f);
+    const q = { ...f, excludeRejected: !f.status };
+    const list = await fetchAll(q);
+    await primeNames(list);
+    const seen = new Set();
+    const contacts = list.filter(m => { const n = m.whatsapp || m.phone; if (seen.has(n)) return false; seen.add(n); return true; });
+    const where = f.locationId ? (await data.locations([f.locationId]))[0]?.name : (me.location_name || 'All India');
+    const tpl = store.get('msg-tpl', 'नमस्कार {name} जी,\n\n');
+
+    root.innerHTML = `<div class="head-row"><h1 class="h2">Send a message</h1></div>
+      <div id="fbar"></div>
+      <section class="card">
+        <div class="msg-sum"><b>${num(contacts.length)}</b><span>unique numbers · ${esc(where)}${f.status ? ' · ' + STATUS[f.status].toLowerCase() : ''}${list.length !== contacts.length ? ` <small class="muted">(${num(list.length - contacts.length)} shared family numbers merged)</small>` : ''}</span></div>
+        <label class="field"><span>Message · संदेश <small class="muted">— {name} is replaced with each member's name</small></span>
+          <textarea id="tpl" rows="5">${esc(tpl)}</textarea></label>
+        <div class="actions-grid">
+          <div class="act-card"><h3>Copy numbers</h3><p>Paste into a bulk-SMS service or WhatsApp Business.</p>
+            <div class="row"><button class="btn" id="c-comma">Copy with commas</button><button class="btn" id="c-lines">One per line</button></div></div>
+          <div class="act-card"><h3>Download for Excel</h3><p>All details in a spreadsheet (Hindi text included).</p>
+            <button class="btn" id="d-csv">Download .csv</button></div>
+          <div class="act-card"><h3>Save to phone contacts</h3><p>Import this file into your phone, then make a WhatsApp broadcast list. Broadcasts reach only people who have saved your number.</p>
+            <button class="btn" id="d-vcf">Download contacts .vcf</button></div>
+          <div class="act-card"><h3>WhatsApp one by one</h3><p>Opens WhatsApp with the message already typed for each person. Good for small groups.</p>
+            <button class="btn primary" id="one">Start</button></div>
+        </div>
+      </section>
+      <div id="queue"></div>`;
+
+    await filterBar($('#fbar', root), f, { onApply: nf => go('message', { filter: nf }) });
+    const tplEl = $('#tpl', root);
+    tplEl.oninput = () => store.set('msg-tpl', tplEl.value);
+    const nums = sep => contacts.map(m => C.COUNTRY_CODE + (m.whatsapp || m.phone)).join(sep);
+    $('#c-comma').onclick = () => copyText(nums(','), `${contacts.length} numbers`);
+    $('#c-lines').onclick = () => copyText(nums('\n'), `${contacts.length} numbers`);
+
+    const placeOf = async m => {
+      const locs = await data.locations(m.location_path);
+      const by = Object.fromEntries(locs.map(l => [l.level, l.name]));
+      by.village = m.village_name;
+      return by;
+    };
+    $('#d-csv').onclick = async () => {
+      const head = ['Name', 'Father/Husband', 'Gender', 'Age', 'Mobile', 'WhatsApp', 'Education', 'Occupation', 'Family members', 'Address', 'Village', 'Panchayat', 'Block', 'District', 'State', 'Booth no', 'Booth name', 'Status', 'Registered on'];
+      const bmap = new Map((await data.boothsByIds(list.map(m => m.booth_id))).map(b => [b.id, b]));
+      const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+      const lines = [head.join(',')];
+      for (const m of list) {
+        const p = await placeOf(m);
+        lines.push([m.full_name, m.guardian_name, m.gender, m.age, m.phone, m.whatsapp, m.education, m.occupation, m.family_size, m.address,
+          p.village, p.panchayat, p.block, p.district, p.state, m.booth_no, bmap.get(m.booth_id)?.name, m.status, (m.created_at || '').slice(0, 10)].map(cell).join(','));
+      }
+      download(`dangi-members-${(where || 'all').replace(/\W+/g, '-')}.csv`, '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+    };
+    $('#d-vcf').onclick = async () => {
+      const out = [];
+      for (const m of contacts) {
+        const p = await placeOf(m);
+        out.push(['BEGIN:VCARD', 'VERSION:3.0', `FN:${m.full_name} (${p.village || ''})`, `TEL;TYPE=CELL:+${C.COUNTRY_CODE}${m.whatsapp || m.phone}`,
+          `ORG:Dangi Samaj - ${p.block || ''}`, 'END:VCARD'].join('\r\n'));
+      }
+      download(`dangi-contacts-${(where || 'all').replace(/\W+/g, '-')}.vcf`, out.join('\r\n'), 'text/vcard');
+    };
+    $('#one').onclick = () => {
+      const sent = new Set();
+      const msgFor = m => tplEl.value.replace(/\{name\}/g, m.full_name);
+      $('#queue').innerHTML = `<section class="card flush"><div class="table-head"><h2 class="h3">Tap each person to open WhatsApp</h2>
+        <span class="muted small" id="q-count">0 of ${contacts.length} opened</span></div>
+        <ul class="queue">${contacts.map((m, i) => `<li><span><b>${esc(m.full_name)}</b><small class="mono">${esc(m.whatsapp || m.phone)}</small></span>
+          <a class="btn small" data-q="${i}" target="_blank" rel="noopener" href="https://wa.me/${C.COUNTRY_CODE}${m.whatsapp || m.phone}?text=${encodeURIComponent(msgFor(m))}">Open WhatsApp</a></li>`).join('')}</ul></section>`;
+      $$('[data-q]').forEach(a => {
+        a.addEventListener('pointerdown', () => { a.href = `https://wa.me/${C.COUNTRY_CODE}${contacts[+a.dataset.q].whatsapp || contacts[+a.dataset.q].phone}?text=${encodeURIComponent(msgFor(contacts[+a.dataset.q]))}`; });
+        a.addEventListener('click', () => { sent.add(a.dataset.q); a.classList.add('done'); a.textContent = 'Opened ✓'; $('#q-count').textContent = `${sent.size} of ${contacts.length} opened`; });
+      });
+      $('#queue').scrollIntoView({ behavior: 'smooth' });
+    };
+  }
+
+  /* ---------------------------------------------------------- LOCATIONS */
+  async function viewLocations(root, { node } = {}) {
+    const admin = me.role === 'super_admin';
+    const scopeId = me.location_id ?? null;
+    node = node ?? scopeId;
+    const nodeLoc = node ? (await data.locations([node]))[0] : null;
+    const kids = await data.children(node);
+    const childLevel = nodeLoc ? LEVELS[LEVELS.indexOf(nodeLoc.level) + 1] : 'state';
+    const crumbs = [];
+    if (!scopeId) crumbs.push({ id: '', name: 'All India' });
+    if (nodeLoc) (await data.locations(nodeLoc.path)).forEach(a => { if (!scopeId || a.path.includes(scopeId)) crumbs.push({ id: a.id, name: a.name }); });
+    const canAdd = childLevel && (admin || childLevel === 'village');
+    const pBooths = nodeLoc?.level === 'panchayat' ? await data.booths(node) : [];
+
+    root.innerHTML = `<nav class="crumbs">${crumbs.map((c, i) => i === crumbs.length - 1 ? `<span>${esc(c.name)}</span>` : `<button data-n="${c.id}">${esc(c.name)}</button><i>›</i>`).join('')}</nav>
+      <div class="head-row"><h1 class="h2">${childLevel ? LVL_PL[childLevel] : 'Village'} ${nodeLoc ? 'in ' + esc(nodeLoc.name) : ''}</h1><span class="muted">${kids.length} listed</span></div>
+      ${canAdd ? `<form class="card row wrap-row" id="addloc">
+        <label class="field grow"><span>New ${childLevel} name (English)</span><input id="ln" required></label>
+        <label class="field grow"><span>नाम (हिंदी) · optional</span><input id="lh"></label>
+        <button class="btn primary" type="submit">Add ${childLevel}</button></form>` : ''}
+      ${!admin && childLevel && childLevel !== 'village' ? `<p class="muted small">Only the super admin can add ${LVL_PL[childLevel].toLowerCase()}. Coordinators can add missing villages once they open a panchayat.</p>` : ''}
+      ${kids.length ? `<ul class="chips">${kids.map(k => `<li><button data-n="${k.id}" ${childLevel === 'village' ? 'disabled' : ''}>${esc(k.name)}${k.name_hi ? ` <small>${esc(k.name_hi)}</small>` : ''}</button></li>`).join('')}</ul>`
+        : `<div class="card empty"><p>${childLevel === 'village' ? 'No official village list here. Members type their village name on the form; add names here only if you want them fixed in the list.' : `Nothing listed here yet.${admin ? ' Add entries one by one above, or import the official LGD list (see README).' : ''}`}</p></div>`}
+      ${pBooths.length ? `<section class="card"><h2 class="h3">Polling booths in ${esc(nodeLoc.name)} <span class="muted small">· ${esc(pBooths[0].assembly)} Vidhan Sabha · ${pBooths.length} booths</span></h2>
+        <ul class="booth-list">${pBooths.map(b => `<li><b>${b.number}</b><span>${esc(b.name)}</span></li>`).join('')}</ul></section>` : ''}`;
+    $$('[data-n]', root).forEach(b => b.onclick = () => go('locations', { node: b.dataset.n === '' ? null : +b.dataset.n }));
+    const fm = $('#addloc', root);
+    if (fm) fm.onsubmit = async e => {
+      e.preventDefault();
+      const name = $('#ln', root).value.trim(); if (!name) return;
+      try { await data.addLocation({ level: childLevel, name, name_hi: $('#lh', root).value.trim() || null, parent_id: node }); toast(`${name} added`); go('locations', { node }); }
+      catch (err) { toast(err.message, 'bad'); }
+    };
+  }
+
+  /* ---------------------------------------------------------- COORDINATORS (super admin) */
+  async function viewCoordinators(root) {
+    const list = await data.coordinators();
+    await data.locations(list.map(c => c.location_id).filter(Boolean));
+    const area = async c => (c.location_id ? pathText((await data.locations([c.location_id]))[0]?.path || [], 'state') : 'All India');
+    const areas = await Promise.all(list.map(area));
+    const order = ['super_admin', 'state', 'district', 'block', 'panchayat'];
+    const idx = list.map((c, i) => i).sort((a, b) => order.indexOf(list[a].role) - order.indexOf(list[b].role));
+
+    root.innerHTML = `<div class="head-row"><h1 class="h2">Coordinators</h1><span class="muted">${list.length} people</span></div>
+      <form class="card form" id="cf"><h2 class="h3">Appoint a coordinator</h2>
+        <p class="muted small">They log in with this email. Each coordinator sees and manages only the members inside their own area.</p>
+        <div class="grid2">
+          <label class="field"><span>Email *</span><input id="c-email" type="email" required></label>
+          <label class="field"><span>Name</span><input id="c-name"></label>
+          <label class="field"><span>Mobile</span><input id="c-phone" type="tel" inputmode="numeric"></label>
+          <label class="field"><span>Level *</span><select id="c-role">${order.slice(1).map(r => `<option value="${r}" ${r === 'district' ? 'selected' : ''}>${ROLE[r]}</option>`).join('')}<option value="super_admin">Super admin (full access)</option></select></label>
+        </div>
+        <div id="c-area" class="group-inline"></div>
+        <div class="row end"><button class="btn primary" type="submit">Save coordinator</button></div></form>
+      <section class="card flush"><div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Name</th><th>Level and area</th><th class="hide-sm">Email</th><th></th></tr></thead>
+        <tbody>${idx.map(i => { const c = list[i]; return `<tr>
+          <td><b>${esc(c.full_name || '—')}</b><div class="muted small mono">${esc(c.phone || '')}</div></td>
+          <td><span class="pill role">${ROLE[c.role]}</span><div class="small">${esc(areas[i])}</div></td>
+          <td class="hide-sm small">${esc(c.email)}${c.active ? '' : ' <span class="pill rejected">inactive</span>'}</td>
+          <td class="end">${c.email === me.email ? '<span class="muted small">you</span>' : `
+            <button class="btn small ghost" data-tog="${esc(c.email)}">${c.active ? 'Pause' : 'Activate'}</button>
+            <button class="btn small ghost danger-text" data-rm="${esc(c.email)}">Remove</button>`}</td></tr>`; }).join('')}</tbody></table></div></section>`;
+
+    let picker = null;
+    const roleSel = $('#c-role', root);
+    const mountArea = async () => {
+      const r = roleSel.value;
+      if (r === 'super_admin') { $('#c-area').innerHTML = '<p class="muted small">Super admins see everything everywhere.</p>'; picker = null; return; }
+      picker = await locPicker($('#c-area'), { upto: r, required: true });
+    };
+    roleSel.onchange = mountArea; await mountArea();
+    $('#cf', root).onsubmit = async e => {
+      e.preventDefault();
+      const role = roleSel.value;
+      const g = picker && picker.get();
+      if (role !== 'super_admin' && (!g || g.level !== role)) { toast(`Choose the ${role} this person will manage.`, 'bad'); return; }
+      const c = { email: $('#c-email').value.trim().toLowerCase(), full_name: $('#c-name').value.trim() || null,
+        phone: cleanPhone($('#c-phone').value) || null, role, location_id: role === 'super_admin' ? null : g.id, active: true };
+      if (!c.email) { toast('Enter an email address.', 'bad'); return; }
+      try { await data.saveCoordinator(c); toast(`${c.full_name || c.email} saved as ${ROLE[role].toLowerCase()}`); go('coordinators'); }
+      catch (err) { toast(err.message, 'bad'); }
+    };
+    $$('[data-tog]', root).forEach(b => b.onclick = async () => {
+      const c = list.find(x => x.email === b.dataset.tog);
+      try { await data.saveCoordinator({ ...c, active: !c.active }); go('coordinators'); } catch (err) { toast(err.message, 'bad'); }
+    });
+    $$('[data-rm]', root).forEach(b => b.onclick = async () => {
+      if (!(await confirmBox(`Remove ${b.dataset.rm}? They will lose access immediately.`, 'Remove', true))) return;
+      try { await data.removeCoordinator(b.dataset.rm); toast('Coordinator removed'); go('coordinators'); } catch (err) { toast(err.message, 'bad'); }
+    });
+  }
+
+  /* ---------------------------------------------------------- boot */
+  async function boot() {
+    try {
+      data = window.createDataLayer(C);
+    } catch (e) {
+      app.innerHTML = `<div class="wrap main"><div class="card error-card"><h2>Could not start</h2><p>${esc(e.message)}</p></div></div>`; return;
+    }
+    if (data.mode === 'live') {
+      const s = await data.session();
+      if (s) { me = await data.me().catch(() => null); await loadScope(); }
+      data.onAuth(async s2 => {
+        if (s2 && !me) { me = await data.me().catch(() => null); if (me) { await loadScope(); go('overview'); } }
+      });
+    }
+    window.addEventListener('online', flushQueue);
+    flushQueue();
+    const start = (location.hash || '').slice(1);
+    go(TABS.some(t => t.id === start) || start === 'login' ? start : 'register');
+
+    if ('serviceWorker' in navigator && data.mode === 'live') {
+      navigator.serviceWorker.register('sw.js').catch(() => { /* optional */ });
+    }
+  }
+  boot();
+})();
+
+</script>
+</body>
+</html>

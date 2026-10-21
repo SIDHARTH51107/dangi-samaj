@@ -1,0 +1,14 @@
+{
+  "name": "Dangi Samaj Portal",
+  "short_name": "दांगी समाज",
+  "description": "दांगी समाज सदस्य पंजीकरण · Dangi community member registration",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f4",
+  "theme_color": "#1c2f6e",
+  "lang": "hi",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

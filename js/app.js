@@ -98,7 +98,7 @@
     if (value) { const [v] = await data.locations([value]); if (v) preset = v.path; }
     box.classList.add('loc-grid');
     box.innerHTML = lv.map((l, i) => `<label class="field"><span>${LVL[l]}${required ? ' *' : ''}</span>
-      <select data-i="${i}" ${required ? 'required' : ''}></select></label>`).join('');
+      <select data-i="${i}" autocomplete="off" ${required ? 'required' : ''}></select></label>`).join('');
     const sels = $$('select', box);
 
     const deepest = () => { for (let i = vals.length - 1; i >= 0; i--) if (vals[i]) return { id: vals[i], level: lv[i], index: i }; return null; };
@@ -949,6 +949,8 @@
       });
     }
     window.addEventListener('online', flushQueue);
+    // phones may reopen the page from memory with an old choice still selected: start the form fresh
+    window.addEventListener('pageshow', e => { if (e.persisted && current === 'register') go('register', { force: true }); });
     flushQueue();
     const start = (location.hash || '').slice(1);
     go(TABS.some(t => t.id === start) || start === 'login' ? start : 'register');

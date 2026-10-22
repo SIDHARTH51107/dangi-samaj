@@ -43,6 +43,8 @@
     if (f.occupation && !(m.occupation || '').toLowerCase().includes(f.occupation.toLowerCase())) return false;
     if (f.village && !(m.village_name || '').toLowerCase().includes(f.village.toLowerCase())) return false;
     if (f.boothNo && m.booth_no !== +f.boothNo) return false;
+    if (f.blockName && (m.block_name || '').toLowerCase() !== f.blockName.toLowerCase()) return false;
+    if (f.panchayatName && (m.panchayat_name || '').toLowerCase() !== f.panchayatName.toLowerCase()) return false;
     if (f.boothId && m.booth_id !== +f.boothId) return false;
     if (f.q) {
       const s = f.q.toLowerCase();
@@ -71,6 +73,8 @@
       if (f.occupation) q = q.ilike('occupation', `%${clean(f.occupation)}%`);
       if (f.village) q = q.ilike('village_name', `%${clean(f.village)}%`);
       if (f.boothNo) q = q.eq('booth_no', +f.boothNo);
+      if (f.blockName) q = q.ilike('block_name', clean(f.blockName));
+      if (f.panchayatName) q = q.ilike('panchayat_name', clean(f.panchayatName));
       if (f.boothId) q = q.eq('booth_id', +f.boothId);
       if (f.q) {
         const s = clean(f.q);
@@ -109,6 +113,14 @@
       async addLocation(loc) {
         const { data } = chk(await sb.from('locations').insert(loc).select(LOC_COLS).single());
         remember([data]); return data;
+      },
+      async typedNames(locId, block, panchayat) {
+        const { data } = chk(await sb.rpc('typed_names', { p_location: locId, p_block: block || null, p_panchayat: panchayat || null }));
+        return (data || []).map(r => r.name).filter(Boolean);
+      },
+      async typedBreakdown(locId, block, panchayat) {
+        const { data } = chk(await sb.rpc('typed_breakdown', { p_location: locId, p_block: block || null, p_panchayat: panchayat || null }));
+        return (data || []).map(r => ({ ...r, total: +r.total, verified: +r.verified, pending: +r.pending }));
       },
       async villageNames(panchayatId) {
         const { data } = chk(await sb.rpc('village_names', { p_panchayat: panchayatId }));
@@ -178,6 +190,10 @@
       'Lakhisarai', 'Madhepura', 'Madhubani', 'Munger', 'Muzaffarpur', 'Nalanda', 'Nawada', 'Patna', 'Purnia',
       'Rohtas', 'Saharsa', 'Samastipur', 'Saran', 'Sheikhpura', 'Sheohar', 'Sitamarhi', 'Siwan', 'Supaul',
       'Vaishali', 'West Champaran'].forEach(n => { D[n] = add('district', n, bihar); });
+    for (const [st, info] of Object.entries(window.STATE_DATA || {})) {
+      const sid = add('state', st, null, { name_hi: info.hi });
+      info.d.forEach(([n, hi]) => { D[n] = add('district', n, sid, { name_hi: hi }); });
+    }
 
     // real Gaya blocks and panchayats (js/gaya-data.js)
     const panchayats = []; const blockId = {}; const panchId = {};
@@ -234,6 +250,25 @@
         created_at: new Date(Date.now() - rnd() * 60 * 864e5).toISOString()
       });
     }
+    // a few sample members from districts with no block list (typed block / panchayat)
+    const typedSamples = [['Indore', 'Mhow', 'Kodariya', 'Kodariya'], ['Indore', 'Mhow', 'Kodariya', 'Simrol'], ['Indore', 'Sanwer', 'Dharawara', 'Dharawara'],
+      ['Jaipur', 'Chaksu', 'Kotkhawda', 'Kotkhawda'], ['Jaipur', 'Phagi', 'Mandawari', 'Mandawari'], ['Kota', 'Ladpura', 'Kansua', 'Kansua']];
+    typedSamples.forEach(([d, b, p, v], i) => {
+      if (!D[d]) return;
+      for (let k = 0; k < 3; k++) {
+        const phone = '91100' + String(10000 + i * 10 + k).slice(-5);
+        members.push({ id: `demo-t${i}-${k}`, full_name: `${pick(male)} Dangi`, guardian_name: `${pick(elders)} Dangi`, gender: 'M', age: 25 + k * 9,
+          phone, whatsapp: phone, education: pick(edu), occupation: pick(occ), family_size: 4, address: '', notes: '', booth_id: null, booth_no: null,
+          place_id: D[d], block_name: b, panchayat_name: p, village_name: v, location_path: locs.get(D[d]).path, consent: true,
+          status: k ? 'verified' : 'pending', source: 'self', created_at: new Date(Date.now() - (i * 3 + k) * 864e5).toISOString() });
+      }
+    });
+    // fill block / panchayat names from the list, as the database does
+    members.forEach(m => {
+      const path = locs.get(m.place_id).path;
+      if (path[2]) m.block_name = locs.get(path[2]).name;
+      if (path[3]) m.panchayat_name = locs.get(path[3]).name;
+    });
     members.sort((a, b) => b.created_at.localeCompare(a.created_at));
 
     const coords = [
@@ -253,9 +288,16 @@
       m.phone = cleanPhone(m.phone); m.whatsapp = cleanPhone(m.whatsapp) || m.phone;
       if (!/^[6-9]\d{9}$/.test(m.phone)) throw new Error('Mobile number must be a valid 10-digit Indian number');
       const pl = locs.get(+m.place_id);
-      if (!pl || !['panchayat', 'village'].includes(pl.level)) throw new Error('Choose the panchayat (and village) where the member lives');
+      if (!pl || pl.level === 'state') throw new Error('Choose at least the district where the member lives');
+      if (['district', 'block'].includes(pl.level) && [...locs.values()].some(l => l.parent_id === pl.id))
+        throw new Error(`Choose the ${pl.level === 'district' ? 'block' : 'panchayat'} from the list`);
       if (pl.level === 'village') m.village_name = pl.name;
+      if (pl.path[2]) m.block_name = locs.get(pl.path[2]).name;
+      if (pl.path[3]) m.panchayat_name = locs.get(pl.path[3]).name;
+      m.block_name = tidyVillage(m.block_name); m.panchayat_name = tidyVillage(m.panchayat_name);
       m.village_name = tidyVillage(m.village_name);
+      if (m.block_name.length < 2) throw new Error('Enter the block name');
+      if (m.panchayat_name.length < 2) throw new Error('Enter the panchayat name');
       if (m.village_name.length < 2) throw new Error('Enter the village name');
       m.location_path = pl.path;
       if (m.booth_id) {
@@ -296,6 +338,29 @@
           throw new Error(`${loc.name} is already listed here`);
         const id = add(loc.level, loc.name.trim(), parent?.id, { name_hi: loc.name_hi || null });
         return later(locs.get(id));
+      },
+      async typedNames(locId, block, panchayat) {
+        const key = m => (!block ? m.block_name : !panchayat ? m.panchayat_name : m.village_name);
+        const set = new Map();
+        notRejected().filter(m => m.location_path.includes(locId)
+          && (!block || m.block_name.toLowerCase() === block.toLowerCase())
+          && (!panchayat || m.panchayat_name.toLowerCase() === panchayat.toLowerCase()))
+          .forEach(m => { const k = key(m); if (k && !set.has(k.toLowerCase())) set.set(k.toLowerCase(), k); });
+        return later([...set.values()].sort());
+      },
+      async typedBreakdown(locId, block, panchayat) {
+        const key = m => (!block ? m.block_name : !panchayat ? m.panchayat_name : m.village_name);
+        const groups = new Map();
+        notRejected().filter(m => can(m.location_path) && m.location_path.includes(locId)
+          && (!block || m.block_name.toLowerCase() === block.toLowerCase())
+          && (!panchayat || m.panchayat_name.toLowerCase() === panchayat.toLowerCase()))
+          .forEach(m => {
+            const k = key(m).toLowerCase();
+            const g = groups.get(k) || { name: key(m), total: 0, verified: 0, pending: 0 };
+            g.total++; if (m.status === 'verified') g.verified++; if (m.status === 'pending') g.pending++;
+            groups.set(k, g);
+          });
+        return later([...groups.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)));
       },
       async villageNames(pid) {
         const listed = [...locs.values()].filter(l => l.parent_id === pid && l.level === 'village').map(l => l.name);
@@ -349,7 +414,7 @@
           const exp = allPanch.filter(p => p.path.includes(l.id)).reduce((a, p) => a + (p.expected_villages || 0), 0);
           return { location_id: l.id, name: l.name, level: l.level, subdivision: l.subdivision, total: ms.length,
             verified: ms.filter(m => m.status === 'verified').length, pending: ms.filter(m => m.status === 'pending').length,
-            villages_reached: new Set(ms.map(m => m.location_path[3] + ':' + m.village_name.toLowerCase())).size,
+            villages_reached: new Set(ms.map(m => `${m.block_name}/${m.panchayat_name}:${m.village_name}`.toLowerCase())).size,
             expected_villages: exp || null };
         }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)));
       },

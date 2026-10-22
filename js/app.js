@@ -91,7 +91,7 @@
   /* ---------------------------------------------------------- location picker
      Cascading selects: State → District → Block → Panchayat → Village.
      locked: ids of a coordinator's own area (those levels are fixed). */
-  async function locPicker(box, { upto = 'panchayat', locked = [], allowAll = false, required = false, value = null, onChange = () => {} } = {}) {
+  async function locPicker(box, { upto = 'panchayat', locked = [], allowAll = false, required = false, value = null, typed = false, onChange = () => {} } = {}) {
     const lv = LEVELS.slice(0, LEVELS.indexOf(upto) + 1);
     const vals = Array(lv.length).fill(null);
     let preset = [];
@@ -102,10 +102,13 @@
     const sels = $$('select', box);
 
     const deepest = () => { for (let i = vals.length - 1; i >= 0; i--) if (vals[i]) return { id: vals[i], level: lv[i], index: i }; return null; };
+    let emptyAt = null;   // first level with no list (typed mode: those levels are typed by hand)
 
     async function fill(i) {
+      if (emptyAt != null && emptyAt >= i) emptyAt = null;
       for (let j = i; j < sels.length; j++) {
         vals[j] = null; sels[j].innerHTML = `<option value="">${allowAll ? 'All · सभी' : '— चुनें · Select —'}</option>`; sels[j].disabled = true;
+        sels[j].closest('label').hidden = false;
       }
       if (i >= sels.length) return;
       const parent = i === 0 ? null : vals[i - 1];
@@ -120,7 +123,12 @@
         sel.insertAdjacentHTML('beforeend', Object.keys(groups).sort().map(g =>
           `<optgroup label="${esc(g)} अनुमंडल · subdivision">${groups[g].map(optHTML).join('')}</optgroup>`).join(''));
       } else sel.insertAdjacentHTML('beforeend', items.map(optHTML).join(''));
-      if (!items.length) { sel.innerHTML = `<option value="">No ${LVL_PL[lv[i]].toLowerCase()} added yet</option>`; return; }
+      if (!items.length) {
+        sel.innerHTML = `<option value="">No ${LVL_PL[lv[i]].toLowerCase()} added yet</option>`;
+        if (i >= 2) emptyAt = i;   // a district or block without a list below it
+        if (typed && i >= 2) for (let j = i; j < sels.length; j++) sels[j].closest('label').hidden = true;
+        return;
+      }
       sel.disabled = false;
       let pick = locked[i] ?? preset[i] ?? null;
       if (pick == null && !allowAll && i <= 1) {
@@ -143,7 +151,7 @@
     }));
     await fill(0);
     onChange(deepest());
-    return { get: deepest, panchayatId: () => vals[LEVELS.indexOf('panchayat')] || null };
+    return { get: deepest, panchayatId: () => vals[LEVELS.indexOf('panchayat')] || null, empty: () => (emptyAt == null ? null : lv[emptyAt]) };
   }
 
   const scopeLocked = () => (me && me.path ? me.path : []);
@@ -222,6 +230,13 @@
     const opt = (list, v) => list.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
     return `
       <fieldset class="group"><legend>स्थान · Location</legend><div id="loc"></div>
+        <p class="hint" id="typed-hint" hidden></p>
+        <div class="grid2" id="typed-wrap" hidden>
+          <label class="field" id="tb-wrap"><span>प्रखंड / तहसील · Block *</span>
+            <input id="f-tblock" list="tblock-list" autocomplete="off" value="${esc(m.block_name)}" placeholder="प्रखंड का नाम लिखें · type block name"><datalist id="tblock-list"></datalist></label>
+          <label class="field" id="tp-wrap"><span>पंचायत · Panchayat *</span>
+            <input id="f-tpanch" list="tpanch-list" autocomplete="off" value="${esc(m.panchayat_name)}" placeholder="पंचायत का नाम लिखें · type panchayat name"><datalist id="tpanch-list"></datalist></label>
+        </div>
         <label class="field"><span>गाँव का नाम · Village name *</span>
           <input id="f-village" list="village-list" required autocomplete="off" value="${esc(m.village_name)}" placeholder="पंचायत चुनें, फिर गाँव लिखें · choose panchayat, then type village">
           <datalist id="village-list"></datalist></label>
@@ -267,17 +282,23 @@
   }
   const boothLabel = b => `${b.number} · ${b.name}`;
 
-  /* location picker + typed village with suggestions + polling booth of the chosen panchayat */
+  /* location picker + village (typed, with suggestions) + polling booth.
+     Where a district or block has no list below it yet, block / panchayat are typed too. */
   async function mountPlace(root, { locked = [], placeId = null, boothId = null } = {}) {
     let listed = [];            // official villages of this panchayat, if any were added
     let booths = [];
     let currentP;
+    let typedBase = null;       // { id, level, name } when names are typed below this place
     const input = $('#f-village', root), dl = $('#village-list', root), hint = $('#village-hint', root);
     const bwrap = $('#booth-wrap', root), bsel = $('#f-booth', root);
+    const twrap = $('#typed-wrap', root), thint = $('#typed-hint', root);
+    const tb = $('#f-tblock', root), tp = $('#f-tpanch', root);
+    const opts = list => list.map(v => `<option value="${esc(v)}">`).join('');
+
     async function onPanchayat(pid) {
       if (pid === currentP) return;
       currentP = pid; dl.innerHTML = ''; hint.hidden = true; listed = []; booths = []; bwrap.hidden = true; bsel.innerHTML = '';
-      input.disabled = !pid;
+      input.disabled = !pid && !typedBase;
       if (!pid) return;
       const [names, kids, [p], bs] = await Promise.all([data.villageNames(pid), data.children(pid), data.locations([pid]), data.booths(pid)]);
       if (pid !== currentP) return;
@@ -286,7 +307,7 @@
       const sugg = new Map();
       names.forEach(n => sugg.set(n.village_name.toLowerCase(), n.village_name));
       bs.map(b => boothPlace(b.name)).filter(Boolean).forEach(v => { if (!sugg.has(v.toLowerCase())) sugg.set(v.toLowerCase(), v); });
-      dl.innerHTML = [...sugg.values()].sort().map(v => `<option value="${esc(v)}">`).join('');
+      dl.innerHTML = opts([...sugg.values()].sort());
       const exp = p?.expected_villages;
       hint.innerHTML = `${esc(p.name)}${/nagar/i.test(p.name) ? '' : ' पंचायत'}${exp ? ` में ${exp} गाँव हैं · has ${exp} villages on record` : ''}${bs.length ? ` · ${bs.length} polling booths` : ''}.
         ${names.length ? `Already registered from: <b>${names.slice(0, 8).map(n => esc(n.village_name)).join(', ')}${names.length > 8 ? '…' : ''}</b>. Pick one if it is yours, or type your ${/nagar/i.test(p.name) ? 'ward or mohalla' : 'village'}.` : `Type your ${/nagar/i.test(p.name) ? 'ward or mohalla' : 'village name'}.`}`;
@@ -297,24 +318,62 @@
         bwrap.hidden = false;
       }
     }
+
+    // typed mode: suggestions come from names other members already typed here
+    const blockName = () => (typedBase && typedBase.level === 'block' ? typedBase.name : tb.value.trim());
+    async function refreshTyped(level) {
+      if (!typedBase) return;
+      const base = typedBase.id;
+      if (level === 'block' && typedBase.level === 'district') $('#tblock-list', root).innerHTML = opts(await data.typedNames(base));
+      if (level !== 'village' && blockName()) $('#tpanch-list', root).innerHTML = opts(await data.typedNames(base, blockName()));
+      if (blockName() && tp.value.trim()) dl.innerHTML = opts(await data.typedNames(base, blockName(), tp.value.trim()));
+    }
     bsel.addEventListener('change', () => {
       const b = booths.find(x => x.id === +bsel.value);
       if (b && !input.value.trim()) { const v = boothPlace(b.name); if (v) input.value = v; }
     });
-    const picker = await locPicker($('#loc', root), {
-      required: true, locked, value: placeId,
-      onChange: d => onPanchayat(d && d.level === 'panchayat' ? d.id : null)
-    });
-    await onPanchayat(picker.panchayatId());
+    tb.addEventListener('change', () => refreshTyped('panchayat'));
+    tp.addEventListener('change', () => refreshTyped('village'));
+
+    async function onPlace(d) {
+      const empty = picker ? picker.empty() : null;
+      const typedHere = d && empty && ((d.level === 'district' && empty === 'block') || (d.level === 'block' && empty === 'panchayat'));
+      if (typedHere) {
+        const [loc] = await data.locations([d.id]);
+        typedBase = { id: d.id, level: d.level, name: loc.name };
+        twrap.hidden = false; $('#tb-wrap', root).hidden = d.level !== 'district';
+        thint.innerHTML = d.level === 'district'
+          ? `${esc(loc.name)} जिले की प्रखंड / पंचायत सूची अभी नहीं जुड़ी है — कृपया नाम लिखें। · Block and panchayat lists for ${esc(loc.name)} are not added yet, so please type them.`
+          : `${esc(loc.name)} की पंचायत सूची अभी नहीं जुड़ी है — कृपया नाम लिखें। · The panchayat list for ${esc(loc.name)} is not added yet, so please type it.`;
+        thint.hidden = false;
+        currentP = undefined; await onPanchayat(null);
+        input.disabled = false; dl.innerHTML = '';
+        await refreshTyped('block');
+      } else {
+        typedBase = null; twrap.hidden = true; thint.hidden = true;
+        await onPanchayat(d && d.level === 'panchayat' ? d.id : null);
+      }
+    }
+    let picker = null;
+    picker = await locPicker($('#loc', root), { required: true, typed: true, locked, value: placeId, onChange: d => onPlace(d) });
+    await onPlace(picker.get());
+
     return {
       get() {
+        if (typedBase) {
+          const b = tidyVillage(blockName()), p = tidyVillage(tp.value), v = tidyVillage(input.value);
+          if (b.length < 2) throw new Error('कृपया प्रखंड का नाम लिखें · Please type the block name.');
+          if (p.length < 2) throw new Error('कृपया पंचायत का नाम लिखें · Please type the panchayat name.');
+          if (v.length < 2) throw new Error('कृपया गाँव का नाम लिखें · Please type the village name.');
+          return { place_id: typedBase.id, block_name: b, panchayat_name: p, village_name: v, booth_id: null };
+        }
         const pid = picker.panchayatId();
         if (!pid) throw new Error('कृपया प्रखंड और पंचायत चुनें · Please choose the block and panchayat.');
         const name = tidyVillage(input.value);
         if (name.length < 2) throw new Error('कृपया गाँव का नाम लिखें · Please type the village name.');
         const official = listed.find(v => v.name.toLowerCase() === name.toLowerCase());
         return { place_id: official ? official.id : pid, village_name: official ? official.name : name,
-          booth_id: bsel.value && !bwrap.hidden ? +bsel.value : null };
+          block_name: null, panchayat_name: null, booth_id: bsel.value && !bwrap.hidden ? +bsel.value : null };
       }
     };
   }
@@ -426,7 +485,7 @@
   }
 
   /* ---------------------------------------------------------- OVERVIEW (drill-down) */
-  async function viewOverview(root, { node, by } = {}) {
+  async function viewOverview(root, { node, by, tb, tp } = {}) {
     const scopeId = me.location_id ?? null;
     node = node ?? store.get('ov-node', null) ?? scopeId;
     // never go above the coordinator's own area
@@ -438,12 +497,20 @@
     const atPanchayat = nodeLoc?.level === 'panchayat';
     const rows = atPanchayat ? [] : await data.counts(node);
     const vrows = atPanchayat ? await data.villageBreakdown(node) : [];
+    // districts / blocks without a list below them: drill through the names members typed
+    const typedMode = !atPanchayat && !rows.length && nodeLoc && ['district', 'block'].includes(nodeLoc.level);
+    const effTb = typedMode ? (nodeLoc.level === 'block' ? nodeLoc.name : tb || null) : null;
+    const effTp = effTb ? tp || null : null;
+    const typedLevel = !effTb ? 'block' : !effTp ? 'panchayat' : 'village';
+    const trows = typedMode ? await data.typedBreakdown(node, effTb, effTp) : [];
     const crumbs = [];
     if (!scopeId) crumbs.push({ id: null, name: 'All India' });
     if (nodeLoc) {
       const anc = await data.locations(nodeLoc.path);
       anc.forEach(a => { if (!scopeId || a.path.includes(scopeId)) crumbs.push({ id: a.id, name: a.name }); });
     }
+    if (typedMode && nodeLoc.level === 'district' && effTb) crumbs.push({ id: node, tb: effTb, name: effTb });
+    if (effTp) crumbs.push({ id: node, tb: effTb, tp: effTp, name: effTp });
     const boothRows = nodeLoc && ['district', 'block', 'panchayat'].includes(nodeLoc.level) ? await data.boothBreakdown(node) : [];
     by = boothRows.length ? (by || store.get('ov-by', 'area')) : 'area';
     store.set('ov-by', by);
@@ -451,12 +518,13 @@
     let tot;
     if (atPanchayat) tot = sum(vrows);
     else if (rows.length) tot = sum(rows);
+    else if (typedMode) tot = sum(trows);
     else {
       const f = { locationId: node || undefined, excludeRejected: true };
       const [all, ver, pen] = await Promise.all([data.listMembers(f, { limit: 1 }), data.listMembers({ ...f, status: 'verified' }, { limit: 1 }), data.listMembers({ ...f, status: 'pending' }, { limit: 1 })]);
       tot = { total: all.count, verified: ver.count, pending: pen.count };
     }
-    const reached = atPanchayat ? vrows.length : rows.reduce((a, r) => a + (r.villages_reached || 0), 0);
+    const reached = atPanchayat ? vrows.length : typedMode ? (typedLevel === 'village' ? trows.length : null) : rows.reduce((a, r) => a + (r.villages_reached || 0), 0);
     const expected = atPanchayat ? nodeLoc.expected_villages : rows.reduce((a, r) => a + (r.expected_villages || 0), 0) || null;
     const childLevel = rows[0]?.level;
     const max = Math.max(1, ...(atPanchayat ? vrows : rows).map(r => r.total));
@@ -484,6 +552,15 @@
         <div class="table-head"><h2 class="h3">By ${LVL_PL[childLevel].toLowerCase().replace(/s$/, '')}</h2><span class="muted small">Tap a row to open it</span></div>
         <div class="tbl-wrap"><table class="tbl drill">${head(LVL[childLevel])}<th class="num">Villages reached</th><th class="bar-col" aria-hidden="true"></th></tr></thead>
         <tbody>${body}</tbody></table></div></section>`;
+    } else if (typedMode && trows.length) {
+      const tmax = Math.max(1, ...trows.map(r => r.total));
+      table = `<section class="card flush">
+        <div class="table-head"><h2 class="h3">By ${typedLevel}</h2><span class="muted small">Names as typed by members · tap a row to open it</span></div>
+        <div class="tbl-wrap"><table class="tbl drill">${head(LVL[typedLevel])}<th class="bar-col" aria-hidden="true"></th></tr></thead>
+        <tbody>${trows.map(r => `<tr data-typed="${esc(r.name)}" tabindex="0"><td>${esc(r.name)}</td><td class="num">${num(r.total)}</td>
+          <td class="num hide-sm">${num(r.verified)}</td><td class="num hide-sm">${num(r.pending)}</td>
+          <td class="bar-col"><span class="bar"><i style="width:${(r.total / tmax * 100).toFixed(1)}%"></i><i class="v" style="width:${(r.verified / tmax * 100).toFixed(1)}%"></i></span></td></tr>`).join('')}</tbody></table></div></section>
+        <p class="muted small">The ${nodeLoc.level === 'district' ? 'block and panchayat lists for this district are' : 'panchayat list for this block is'} not added yet, so members typed these names. If one place appears under two spellings, correct it with Edit on the member list.</p>`;
     } else if (atPanchayat && vrows.length) {
       table = `<section class="card flush">
         <div class="table-head"><h2 class="h3">By village</h2><span class="muted small">Names as typed by members · tap to see who is registered</span></div>
@@ -492,7 +569,8 @@
           <td class="num hide-sm">${num(r.verified)}</td><td class="num hide-sm">${num(r.pending)}</td>${bar(r)}</tr>`).join('')}</tbody></table></div></section>
         <p class="muted small">If one village appears under two spellings, open its members and correct the village name with Edit.</p>`;
     } else {
-      table = `<div class="card empty"><p>${atPanchayat ? 'No one from this panchayat has registered yet. Share the registration link in its WhatsApp groups.' : 'No areas have been added below this one yet. Add them under Locations.'}</p></div>`;
+      table = `<div class="card empty"><p>${atPanchayat ? 'No one from this panchayat has registered yet. Share the registration link in its WhatsApp groups.'
+        : typedMode ? `No one from ${esc(nodeLoc.name)} has registered yet. Members from here type their block, panchayat and village on the form.` : 'No areas have been added below this one yet. Add them under Locations.'}</p></div>`;
     }
 
     if (by === 'booth') {
@@ -520,17 +598,18 @@
 
     root.innerHTML = `
       <nav class="crumbs" aria-label="Area">${crumbs.map((c, i) => i === crumbs.length - 1
-        ? `<span aria-current="page">${esc(c.name)}</span>` : `<button data-node="${c.id ?? ''}">${esc(c.name)}</button><i>›</i>`).join('')}</nav>
-      <div class="head-row"><div><h1 class="h2">${esc(nodeLoc?.name || 'All India')}</h1>
-        ${nodeLoc ? `<p class="muted small sub">${LVL[nodeLoc.level]}${nodeLoc.subdivision ? ` · ${esc(nodeLoc.subdivision)} subdivision` : ''}</p>` : ''}</div>
+        ? `<span aria-current="page">${esc(c.name)}</span>`
+        : `<button data-node="${c.id ?? ''}"${c.tb ? ` data-ctb="${esc(c.tb)}"` : ''}${c.tp ? ` data-ctp="${esc(c.tp)}"` : ''}>${esc(c.name)}</button><i>›</i>`).join('')}</nav>
+      <div class="head-row"><div><h1 class="h2">${esc(effTp || (nodeLoc?.level === 'district' && effTb) || nodeLoc?.name || 'All India')}</h1>
+        ${nodeLoc ? `<p class="muted small sub">${effTp ? LVL.panchayat + ' · ' + esc(effTb) : effTb && nodeLoc.level === 'district' ? LVL.block + ' · ' + esc(nodeLoc.name) : LVL[nodeLoc.level]}${nodeLoc.subdivision ? ` · ${esc(nodeLoc.subdivision)} subdivision` : ''}</p>` : ''}</div>
         <div class="row"><button class="btn" id="ov-members">View members</button><button class="btn primary" id="ov-msg">Message these members</button></div></div>
       ${assemblies.length ? `<p class="muted small sub">Polling booths: ${assemblies.map(a => esc(a) + ' Vidhan Sabha').join(', ')}</p>` : ''}
       <div class="stats">
         <div class="stat"><span>Registered members</span><b>${num(tot.total)}</b></div>
         <div class="stat ok"><span>Verified</span><b>${num(tot.verified)}</b></div>
         <div class="stat warn"><span>Waiting for verification</span><b>${num(tot.pending)}</b>${tot.pending ? '<button class="link" id="ov-pending">Review now →</button>' : ''}</div>
-        <div class="stat"><span>Villages reached</span><b>${num(reached)}${expected ? `<small> of ${num(expected)}</small>` : ''}</b>
-          ${expected ? `<span class="meter" aria-hidden="true"><i style="width:${Math.min(100, reached / expected * 100).toFixed(1)}%"></i></span>` : ''}</div>
+        ${reached != null ? `<div class="stat"><span>Villages reached</span><b>${num(reached)}${expected ? `<small> of ${num(expected)}</small>` : ''}</b>
+          ${expected ? `<span class="meter" aria-hidden="true"><i style="width:${Math.min(100, reached / expected * 100).toFixed(1)}%"></i></span>` : ''}</div>` : ''}
         ${boothRows.length ? `<div class="stat"><span>Booths with members</span><b>${num(boothsWith)}<small> of ${num(boothRows.length)}</small></b>
           <span class="meter" aria-hidden="true"><i style="width:${(boothsWith / boothRows.length * 100).toFixed(1)}%"></i></span></div>` : ''}
       </div>
@@ -548,14 +627,24 @@
       el.addEventListener('keydown', e => { if (e.key === 'Enter') openV(); });
     });
 
-    const open = id => go('overview', { node: id === '' ? null : +id });
-    $$('[data-node]', root).forEach(el => {
-      el.addEventListener('click', () => open(el.dataset.node));
-      el.addEventListener('keydown', e => { if (e.key === 'Enter') open(el.dataset.node); });
+    $$('[data-typed]', root).forEach(el => {
+      const name = el.dataset.typed;
+      const openT = () => typedLevel === 'village'
+        ? go('members', { filter: { locationId: node, blockName: effTb, panchayatName: effTp, village: name } })
+        : go('overview', { node, tb: effTb || name, tp: effTb ? name : null });
+      el.addEventListener('click', openT);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') openT(); });
     });
-    $('#ov-members').onclick = () => go('members', { filter: { locationId: node } });
-    $('#ov-msg').onclick = () => go('message', { filter: { locationId: node } });
-    const p = $('#ov-pending'); if (p) p.onclick = () => go('members', { filter: { locationId: node, status: 'pending' } });
+
+    const open = el => go('overview', { node: el.dataset.node === '' ? null : +el.dataset.node, tb: el.dataset.ctb || null, tp: el.dataset.ctp || null });
+    $$('[data-node]', root).forEach(el => {
+      el.addEventListener('click', () => open(el));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') open(el); });
+    });
+    const scope = { locationId: node, ...(typedMode && effTb ? { blockName: effTb } : {}), ...(effTp ? { panchayatName: effTp } : {}) };
+    $('#ov-members').onclick = () => go('members', { filter: scope });
+    $('#ov-msg').onclick = () => go('message', { filter: scope });
+    const p = $('#ov-pending'); if (p) p.onclick = () => go('members', { filter: { ...scope, status: 'pending' } });
   }
 
   /* ---------------------------------------------------------- MEMBERS */
@@ -565,6 +654,8 @@
       <div class="grid-auto">
         <label class="field"><span>Search name or mobile</span><input id="q" type="search" value="${esc(f.q)}"></label>
         <label class="field"><span>Village · गाँव</span><input id="vf" type="search" value="${esc(f.village)}"></label>
+        <label class="field"><span>Block name · प्रखंड</span><input id="bnf" type="search" value="${esc(f.blockName)}"></label>
+        <label class="field"><span>Panchayat name · पंचायत</span><input id="pnf" type="search" value="${esc(f.panchayatName)}"></label>
         <label class="field"><span>Booth no. · बूथ</span><input id="bf" type="number" inputmode="numeric" min="1" value="${esc(f.boothNo)}"></label>
         ${showStatus ? `<label class="field"><span>Status</span><select id="st"><option value="">All except rejected</option>
           ${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>` : ''}
@@ -582,7 +673,7 @@
       const g = picker.get();
       const v = id => $(id, root)?.value.trim() || '';
       onApply({
-        locationId: g ? g.id : (me.location_id || null), q: v('#q'), village: v('#vf'), boothNo: v('#bf') ? +v('#bf') : null, status: v('#st'), gender: v('#gd'),
+        locationId: g ? g.id : (me.location_id || null), q: v('#q'), village: v('#vf'), blockName: v('#bnf'), panchayatName: v('#pnf'), boothNo: v('#bf') ? +v('#bf') : null, status: v('#st'), gender: v('#gd'),
         ageMin: v('#a1') ? +v('#a1') : null, ageMax: v('#a2') ? +v('#a2') : null, occupation: v('#oc')
       });
     };
@@ -595,7 +686,8 @@
     const size = 50;
     const { rows, count } = await data.listMembers(q, { offset: page * size, limit: size });
     await primeNames(rows);
-    const places = await Promise.all(rows.map(async r => [r.village_name, await pathText(r.location_path.slice(0, 4), 'block')].filter(Boolean).join(' · ')));
+    const places = await Promise.all(rows.map(async r => [r.village_name, r.panchayat_name, r.block_name,
+      r.location_path.length <= 3 ? await pathText(r.location_path.slice(0, 2), 'district') : null].filter(Boolean).join(' · ')));
     const admin = me.role === 'super_admin';
 
     root.innerHTML = `<div class="head-row"><h1 class="h2">Members</h1>
@@ -708,6 +800,8 @@
       const locs = await data.locations(m.location_path);
       const by = Object.fromEntries(locs.map(l => [l.level, l.name]));
       by.village = m.village_name;
+      if (m.block_name) by.block = m.block_name;
+      if (m.panchayat_name) by.panchayat = m.panchayat_name;
       return by;
     };
     $('#d-csv').onclick = async () => {

@@ -32,7 +32,7 @@ insert into g values
 ('Sherghati','Banke Bazar','Parsawan Khurd',9),
 ('Sherghati','Banke Bazar','Roshan Ganj',15),
 ('Sherghati','Banke Bazar','Saif Ganj',7),
-('Sherghati','Banke Bazar','Tarwan',6),
+('Sherghati','Banke Bazar','Tandwa',6),
 ('Sherghati','Banke Bazar','Tilaiya',13),
 ('Sherghati','Barachatti','Bajarkar',16),
 ('Sherghati','Barachatti','Bara',3),

@@ -143,7 +143,9 @@ create table if not exists public.members (
   family_size   int  check (family_size between 1 and 100),
   address       text,                                   -- tola / mohalla / ward
   notes         text,
-  place_id      bigint not null references public.locations(id) on delete restrict,  -- panchayat, or village if listed
+  place_id      bigint not null references public.locations(id) on delete restrict,  -- deepest listed place (district, block, panchayat or village)
+  block_name     text,                                  -- filled from the list, or typed where no block list exists
+  panchayat_name text,                                  -- filled from the list, or typed where no panchayat list exists
   village_name  text not null,                          -- village / gaon as the member names it
   location_path bigint[] not null default '{}',         -- auto-filled from place_id
   booth_id      bigint references public.booths(id) on delete set null,   -- optional
@@ -162,6 +164,9 @@ create index        if not exists members_path_gin      on public.members using 
 create index        if not exists members_status_i      on public.members(status);
 create index        if not exists members_created_i     on public.members(created_at desc);
 create index        if not exists members_village_i     on public.members(place_id, lower(village_name));
+-- for databases created before typed block / panchayat names were added
+alter table public.members add column if not exists block_name text;
+alter table public.members add column if not exists panchayat_name text;
 -- for databases created before booths were added
 alter table public.members add column if not exists booth_id bigint references public.booths(id) on delete set null;
 alter table public.members add column if not exists booth_no int;
@@ -172,6 +177,9 @@ language sql immutable as $$
   select case when p is null or btrim(p) = '' then null
               else right(regexp_replace(p, '\D', '', 'g'), 10) end
 $$;
+
+create or replace function public.tidy_name(p text) returns text
+language sql immutable as $$ select initcap(regexp_replace(btrim(coalesce(p, '')), '\s+', ' ', 'g')) $$;
 
 create or replace function public.members_before_write() returns trigger
 language plpgsql as $$
@@ -184,14 +192,26 @@ begin
     raise exception 'Mobile number must be a valid 10-digit Indian number';
   end if;
   select level, path, name into v_level, v_path, v_name from public.locations where id = new.place_id;
-  if v_level is null or v_level not in ('panchayat','village') then
-    raise exception 'Choose the panchayat (and village) where the member lives';
+  if v_level is null or v_level not in ('district','block','panchayat','village') then
+    raise exception 'Choose at least the district where the member lives';
+  end if;
+  -- where a list exists, the member must pick from it; typed names only below the last listed level
+  if v_level in ('district','block') and exists (select 1 from public.locations c where c.parent_id = new.place_id) then
+    raise exception 'Choose the % from the list', case v_level when 'district' then 'block' else 'panchayat' end;
   end if;
   if v_level = 'village' then new.village_name := v_name; end if;
-  new.village_name := initcap(regexp_replace(btrim(coalesce(new.village_name, '')), '\s+', ' ', 'g'));
-  if length(new.village_name) < 2 then
-    raise exception 'Enter the village name';
+  if v_level in ('block','panchayat','village') then
+    select name into new.block_name from public.locations where id = v_path[3];
   end if;
+  if v_level in ('panchayat','village') then
+    select name into new.panchayat_name from public.locations where id = v_path[4];
+  end if;
+  new.block_name     := public.tidy_name(new.block_name);
+  new.panchayat_name := public.tidy_name(new.panchayat_name);
+  new.village_name   := public.tidy_name(new.village_name);
+  if length(new.block_name) < 2 then raise exception 'Enter the block name'; end if;
+  if length(new.panchayat_name) < 2 then raise exception 'Enter the panchayat name'; end if;
+  if length(new.village_name) < 2 then raise exception 'Enter the village name'; end if;
   new.location_path := v_path;
   if new.booth_id is not null then
     select panchayat_id, number into b_panch, new.booth_no from public.booths where id = new.booth_id;
@@ -317,7 +337,7 @@ language sql stable security invoker set search_path = public as $$
          count(m.id),
          count(m.id) filter (where m.status = 'verified'),
          count(m.id) filter (where m.status = 'pending'),
-         count(distinct (m.location_path[4]::text || ':' || lower(m.village_name))),
+         count(distinct (lower(m.block_name) || '/' || lower(m.panchayat_name) || ':' || lower(m.village_name))),
          (select sum(p.expected_villages) from public.locations p
            where p.level = 'panchayat' and p.path @> array[l.id])
   from public.locations l
@@ -370,6 +390,37 @@ language sql stable security invoker set search_path = public as $$
   order by b.assembly, b.number
 $$;
 
+-- where no block / panchayat list exists: members grouped by the names they typed
+--   p_block null            -> by block
+--   p_block set             -> by panchayat inside that block
+--   p_block + p_panchayat   -> by village inside that panchayat
+create or replace function public.typed_breakdown(p_location bigint, p_block text, p_panchayat text)
+returns table(name text, total bigint, verified bigint, pending bigint)
+language sql stable security invoker set search_path = public as $$
+  select min(case when p_block is null then m.block_name when p_panchayat is null then m.panchayat_name else m.village_name end),
+         count(*),
+         count(*) filter (where m.status = 'verified'),
+         count(*) filter (where m.status = 'pending')
+  from public.members m
+  where m.location_path @> array[p_location] and m.status <> 'rejected'
+    and (p_block is null or lower(m.block_name) = lower(p_block))
+    and (p_panchayat is null or lower(m.panchayat_name) = lower(p_panchayat))
+  group by lower(case when p_block is null then m.block_name when p_panchayat is null then m.panchayat_name else m.village_name end)
+  order by count(*) desc, 1
+$$;
+
+-- names already typed under a place (for suggestions on the public form; names only, no personal data)
+create or replace function public.typed_names(p_location bigint, p_block text, p_panchayat text)
+returns table(name text)
+language sql stable security definer set search_path = public as $$
+  select distinct case when p_block is null then m.block_name when p_panchayat is null then m.panchayat_name else m.village_name end
+  from public.members m
+  where m.location_path @> array[p_location] and m.status <> 'rejected'
+    and (p_block is null or lower(m.block_name) = lower(p_block))
+    and (p_panchayat is null or lower(m.panchayat_name) = lower(p_panchayat))
+  order by 1
+$$;
+
 -- ---------------------------------------------------------------------
 -- 7. PERMISSIONS for Supabase API roles
 -- ---------------------------------------------------------------------
@@ -382,7 +433,7 @@ grant insert on public.members to anon;
 grant select, insert, update, delete on public.members to authenticated;
 grant select, insert, update, delete on public.coordinators to authenticated;
 grant execute on function public.me(), public.is_super_admin(), public.can_access(bigint[]),
-  public.member_counts(bigint), public.village_breakdown(bigint), public.village_names(bigint), public.booth_breakdown(bigint), public.my_email(), public.clean_phone(text) to anon, authenticated;
+  public.member_counts(bigint), public.village_breakdown(bigint), public.village_names(bigint), public.booth_breakdown(bigint), public.typed_breakdown(bigint, text, text), public.typed_names(bigint, text, text), public.tidy_name(text), public.my_email(), public.clean_phone(text) to anon, authenticated;
 
 -- =====================================================================
 --  AFTER RUNNING: make yourself super admin (change the email):

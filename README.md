@@ -70,6 +70,7 @@ If `config.js` has no Supabase URL, the app runs in **demo mode** with sample da
 ## Districts without a block list (Madhya Pradesh, Rajasthan, most of Bihar)
 
 - **Madhya Pradesh** (55 districts) and **Rajasthan** (41 districts) are loaded (`supabase/seed_mp_rajasthan.sql`).
+- **Jharkhand** (24), **Uttar Pradesh** (75), **Karnataka** (31), **Gujarat** (34) and **West Bengal** (23) are loaded too (`supabase/seed_more_states.sql`).
 - **Where a district has no block list yet**, the form asks members to **type** their block, panchayat and village. As people register, the boxes suggest names others in that district already typed, so spellings stay consistent.
 - **On the dashboard**, those districts drill down by the typed names: block, then panchayat, then village.
 - **When an official list is added later**, members of that district must pick from it. Earlier typed entries stay as they are.

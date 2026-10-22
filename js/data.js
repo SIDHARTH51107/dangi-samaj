@@ -205,6 +205,20 @@
       }
     }
 
+    // Jehanabad blocks, panchayats and town wards (js/jehanabad-data.js)
+    const JD = window.JEHANABAD_DATA;
+    if (JD && D.Jehanabad) {
+      const jb = {};
+      for (const [b, bh, ps] of JD.blocks) {
+        jb[b] = add('block', b, D.Jehanabad, { name_hi: bh });
+        for (const [p, ph] of ps) panchayats.push({ id: add('panchayat', p, jb[b], { name_hi: ph }), name: p, w: 1 });
+      }
+      for (const [b, town, townHi, wards] of JD.urban) {
+        const tid = add('panchayat', town, jb[b], { name_hi: townHi });
+        for (let i = 1; i <= wards; i++) add('village', `Ward ${String(i).padStart(2, '0')}`, tid, { name_hi: `वार्ड ${String(i).padStart(2, '0')}` });
+      }
+    }
+
     // Imamganj town area and the 227-Imamganj polling booths (js/booth-data.js)
     if (blockId.Imamganj) {
       const np = add('panchayat', 'Imamganj Nagar Panchayat', blockId.Imamganj); panchId['Imamganj/Imamganj Nagar Panchayat'] = np;

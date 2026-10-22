@@ -1,7 +1,7 @@
 // Offline support: keeps the app's own files on the phone so the
 // registration form opens even without internet. Data is never cached.
 const CACHE = 'dangi-v5';
-const FILES = ['./', './index.html', './css/app.css', './js/config.js', './js/gaya-data.js', './js/booth-data.js', './js/state-data.js', './js/jehanabad-data.js', './js/data.js', './js/app.js',
+const FILES = ['./app.html', './css/app.css', './js/config.js', './js/gaya-data.js', './js/booth-data.js', './js/state-data.js', './js/jehanabad-data.js', './js/data.js', './js/app.js',
   './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', e => {
@@ -17,5 +17,5 @@ self.addEventListener('fetch', e => {
   // network first, fall back to the saved copy when offline
   e.respondWith(fetch(e.request).then(res => {
     const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res;
-  }).catch(() => caches.match(e.request).then(r => r || caches.match('./index.html'))));
+  }).catch(() => caches.match(e.request).then(r => r || caches.match('./app.html'))));
 });

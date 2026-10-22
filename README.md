@@ -14,11 +14,16 @@ It runs on **Supabase** (database + login) and any free static host. It works fo
 
 ---
 
+## Where the app lives
+
+- **Live app:** https://dangisamaj.github.io (repository `dangisamaj/dangisamaj.github.io`). It's a single-file build of this source.
+- **This repository** holds the source. `app.html` is the app's entry page. The `index.html` here only sends visitors of the old address (sidharth51107.github.io/dangi-samaj) to the live app.
+
 ## What's in the folder
 
 | File | What it is |
 |---|---|
-| `index.html`, `css/`, `js/` | The app |
+| `app.html`, `css/`, `js/` | The app (open `app.html`) |
 | `js/config.js` | **The only file you edit**: your Supabase keys and app name |
 | `supabase/schema.sql` | Creates the tables and the access rules |
 | `supabase/seed_bihar.sql` | Adds Bihar and its 38 districts |
@@ -29,7 +34,7 @@ It runs on **Supabase** (database + login) and any free static host. It works fo
 | `tools/lgd_to_sql.py` | Converts the official village list into import files |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Let people add the app to their home screen and open the form offline |
 
-If `config.js` has no Supabase URL, the app runs in **demo mode** with sample data. Open `index.html` to try it.
+If `config.js` has no Supabase URL, the app runs in **demo mode** with sample data. Open `app.html` to try it.
 
 ---
 

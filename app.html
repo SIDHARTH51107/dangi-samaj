@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dangi Samaj Portal</title>
+<meta name="description" content="दांगी समाज सदस्य पंजीकरण · Dangi community member registration">
+<meta name="theme-color" content="#1c2f6e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Tiro+Devanagari+Hindi&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app"><div class="boot">दांगी समाज · Loading…</div></div>
+<script src="js/config.js"></script>
+<script>
+  // Load the Supabase library only when the app is connected (not in demo mode)
+  if (window.APP_CONFIG.SUPABASE_URL) {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"><\/script>');
+  }
+</script>
+<script src="js/gaya-data.js"></script>
+<script src="js/booth-data.js"></script>
+<script src="js/state-data.js"></script>
+<script src="js/jehanabad-data.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

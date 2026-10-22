@@ -67,6 +67,14 @@ If `config.js` has no Supabase URL, the app runs in **demo mode** with sample da
    ```
    The anon key is safe to put in the app. The database rules decide what anyone can see.
 
+## Districts without a block list (Madhya Pradesh, Rajasthan, most of Bihar)
+
+- **Madhya Pradesh** (55 districts) and **Rajasthan** (41 districts) are loaded (`supabase/seed_mp_rajasthan.sql`).
+- **Where a district has no block list yet**, the form asks members to **type** their block, panchayat and village. As people register, the boxes suggest names others in that district already typed, so spellings stay consistent.
+- **On the dashboard**, those districts drill down by the typed names: block, then panchayat, then village.
+- **When an official list is added later**, members of that district must pick from it. Earlier typed entries stay as they are.
+- **Jehanabad** has its full list (`supabase/seed_jehanabad.sql`): 7 blocks and 93 panchayats, plus Jehanabad Nagar Parishad (33 wards) and Makhdumpur Nagar Panchayat (19 wards).
+
 ## Polling booths
 
 Booths are loaded for **227-Imamganj Vidhan Sabha**: 403 booths across Dumaria (1–115), Imamganj (116–289) and Banke Bazar (290–403). Each booth is linked to its panchayat.

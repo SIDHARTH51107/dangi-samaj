@@ -260,3 +260,12 @@ optgroup { font-style: normal; font-weight: 600; }
 .booth-list li { break-inside: avoid; padding: 5px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; }
 .booth-list b { font-variant-numeric: tabular-nums; color: var(--primary); min-width: 32px; }
 .note.ok-note { background: var(--ok-soft); color: var(--ink); font-size: .9rem; }
+
+/* India / Nepal / abroad choice on the form */
+.region-tabs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; width: 100%; }
+.region-tabs button { flex: 1 1 auto; padding: 10px 12px; font-size: 15px; }
+.phone-row { display: flex; gap: 8px; }
+.phone-row select { flex: 0 0 auto; width: 9.5em; min-width: 0; }
+.phone-row input { flex: 1 1 auto; min-width: 0; }
+.chips-head { margin: 18px 0 8px; }
+.field > .phone-row { font-size: 1rem; font-weight: 400; color: var(--ink, inherit); }

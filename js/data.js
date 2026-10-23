@@ -6,7 +6,7 @@
 (function () {
   const LEVELS = ['state', 'district', 'block', 'panchayat', 'village'];
   window.LEVELS = LEVELS;
-  const LOC_COLS = 'id,level,name,name_hi,parent_id,path,subdivision,expected_villages';
+  const LOC_COLS = 'id,level,name,name_hi,parent_id,path,subdivision,expected_villages,region';
 
   function friendlyError(e) {
     const code = e && (e.code || e.status);
@@ -27,6 +27,19 @@
   }
   window.cleanPhone = cleanPhone;
 
+  // same as the database: Indian numbers as 10 digits, others as +<country code><number>
+  function storePhone(p) {
+    const t = String(p || '').trim();
+    if (!t) return '';
+    if (/^(\+|00)/.test(t)) {
+      const d = t.replace(/^00/, '').replace(/\D/g, '');
+      return /^91[6-9]\d{9}$/.test(d) ? d.slice(-10) : '+' + d;
+    }
+    return cleanPhone(t);
+  }
+  window.storePhone = storePhone;
+  window.phoneOk = p => /^[6-9]\d{9}$/.test(p) || /^\+[1-9]\d{7,14}$/.test(p);
+
   // same tidy-up the database does: trim, single spaces, Title Case
   function tidyVillage(v) {
     return String(v || '').trim().replace(/\s+/g, ' ').toLowerCase().replace(/(^|[\s(-])\S/g, c => c.toUpperCase());
@@ -41,6 +54,7 @@
     if (f.ageMin && !(m.age >= f.ageMin)) return false;
     if (f.ageMax && !(m.age <= f.ageMax)) return false;
     if (f.occupation && !(m.occupation || '').toLowerCase().includes(f.occupation.toLowerCase())) return false;
+    if (f.maritalStatus && m.marital_status !== f.maritalStatus) return false;
     if (f.village && !(m.village_name || '').toLowerCase().includes(f.village.toLowerCase())) return false;
     if (f.boothNo && m.booth_no !== +f.boothNo) return false;
     if (f.blockName && (m.block_name || '').toLowerCase() !== f.blockName.toLowerCase()) return false;
@@ -71,6 +85,7 @@
       if (f.ageMin) q = q.gte('age', f.ageMin);
       if (f.ageMax) q = q.lte('age', f.ageMax);
       if (f.occupation) q = q.ilike('occupation', `%${clean(f.occupation)}%`);
+      if (f.maritalStatus) q = q.eq('marital_status', f.maritalStatus);
       if (f.village) q = q.ilike('village_name', `%${clean(f.village)}%`);
       if (f.boothNo) q = q.eq('booth_no', +f.boothNo);
       if (f.blockName) q = q.ilike('block_name', clean(f.blockName));
@@ -180,7 +195,8 @@
     const add = (level, name, parent, extra = {}) => {
       const id = nextId++;
       const path = parent ? [...locs.get(parent).path, id] : [id];
-      const l = { id, level, name, name_hi: null, parent_id: parent || null, path, subdivision: null, expected_villages: null, ...extra };
+      const region = parent ? locs.get(parent).region : (extra.region || 'india');
+      const l = { id, level, name, name_hi: null, parent_id: parent || null, path, subdivision: null, expected_villages: null, ...extra, region };
       locs.set(id, l); return id;
     };
     const bihar = add('state', 'Bihar', null, { name_hi: 'बिहार' });
@@ -191,8 +207,8 @@
       'Rohtas', 'Saharsa', 'Samastipur', 'Saran', 'Sheikhpura', 'Sheohar', 'Sitamarhi', 'Siwan', 'Supaul',
       'Vaishali', 'West Champaran'].forEach(n => { D[n] = add('district', n, bihar); });
     for (const [st, info] of Object.entries(window.STATE_DATA || {})) {
-      const sid = add('state', st, null, { name_hi: info.hi });
-      info.d.forEach(([n, hi]) => { D[n] = add('district', n, sid, { name_hi: hi }); });
+      const sid = add('state', st, null, { name_hi: info.hi, region: info.r || 'india' });
+      info.d.forEach(([n, hi]) => { const id = add('district', n, sid, { name_hi: hi }); if (!D[n]) D[n] = id; });
     }
 
     // real Gaya blocks and panchayats (js/gaya-data.js)
@@ -255,6 +271,7 @@
         gender: g, age: 18 + Math.floor(rnd() * 55),
         phone, whatsapp: phone,
         education: pick(edu), occupation: pick(occ), family_size: 2 + Math.floor(rnd() * 8),
+        marital_status: pick(['married', 'married', 'married', 'unmarried', null]),
         address: 'Ward ' + (1 + Math.floor(rnd() * 12)), notes: '',
         ...(() => { const bs = boothsOf(p.id); const b = bs.length && rnd() < 0.8 ? pick(bs) : null; return { booth_id: b ? b.id : null, booth_no: b ? b.number : null }; })(),
         place_id: p.id, village_name: p.town ? 'Ward ' + (1 + Math.floor(vr * 15)) : vr < 0.55 ? p.name : vr < 0.8 ? `${p.name} Khurd` : `${p.name} Kalan`,
@@ -277,6 +294,21 @@
           status: k ? 'verified' : 'pending', source: 'self', created_at: new Date(Date.now() - (i * 3 + k) * 864e5).toISOString() });
       }
     });
+    // a few from Nepal and abroad (NRI)
+    const findLoc = (name, state) => [...locs.values()].find(l => l.name === name && locs.get(l.path[0]).name === state)?.id;
+    [['Kathmandu', 'Bagmati', 'Kathmandu Metropolitan City', 'Ward 10', 'Baneshwor', '+9779812300001', null],
+      ['Rupandehi', 'Lumbini', 'Butwal Sub-Metropolitan City', 'Ward 4', 'Kalikanagar', '+9779812300002', null],
+      ['United Arab Emirates (UAE)', 'NRI / Abroad', 'Dubai', 'Dubai', 'Al Qusais', '+971501230001', 'Bikopur, Imamganj, Gaya'],
+      ['Saudi Arabia', 'NRI / Abroad', 'Riyadh Province', 'Riyadh', 'Riyadh', '+966501230002', 'Kothi, Imamganj, Gaya'],
+      ['United States (USA)', 'NRI / Abroad', 'California', 'San Jose', 'San Jose', '+14085550003', 'Patna, Bihar']]
+      .forEach(([d, st, b, p, v, phone, native], i) => {
+        const pid = findLoc(d, st); if (!pid) return;
+        members.push({ id: 'demo-x' + i, full_name: `${pick(male)} Dangi`, guardian_name: `${pick(elders)} Dangi`, gender: 'M', age: 28 + i * 4,
+          phone, whatsapp: phone, education: 'Graduate', occupation: i < 2 ? 'Business / व्यापार' : 'Working abroad / विदेश में काम', marital_status: 'married',
+          family_size: 4, address: '', notes: '', booth_id: null, booth_no: null, native_place: native,
+          place_id: pid, block_name: b, panchayat_name: p, village_name: v, location_path: locs.get(pid).path, consent: true,
+          status: 'verified', source: 'self', created_at: new Date(Date.now() - (i + 1) * 3600e3).toISOString() });
+      });
     // fill block / panchayat names from the list, as the database does
     members.forEach(m => {
       const path = locs.get(m.place_id).path;
@@ -299,19 +331,27 @@
     const deny = () => { throw friendlyError({ code: '42501' }); };
     const later = v => new Promise(r => setTimeout(() => r(v), 100));
     const validate = m => {
-      m.phone = cleanPhone(m.phone); m.whatsapp = cleanPhone(m.whatsapp) || m.phone;
-      if (!/^[6-9]\d{9}$/.test(m.phone)) throw new Error('Mobile number must be a valid 10-digit Indian number');
+      m.phone = storePhone(m.phone); m.whatsapp = storePhone(m.whatsapp) || m.phone;
+      if (!phoneOk(m.phone)) throw new Error('Enter a valid mobile number: 10 digits in India, or with the country code (+977…, +971…)');
+      if (!m.marital_status) m.marital_status = null;
+      else if (!['unmarried', 'married', 'widowed', 'divorced'].includes(m.marital_status)) throw new Error('Unknown marital status');
       const pl = locs.get(+m.place_id);
-      if (!pl || pl.level === 'state') throw new Error('Choose at least the district where the member lives');
+      if (!pl || pl.level === 'state') throw new Error('Choose at least the district (or country) where the member lives');
       if (['district', 'block'].includes(pl.level) && [...locs.values()].some(l => l.parent_id === pl.id))
         throw new Error(`Choose the ${pl.level === 'district' ? 'block' : 'panchayat'} from the list`);
       if (pl.level === 'village') m.village_name = pl.name;
       if (pl.path[2]) m.block_name = locs.get(pl.path[2]).name;
       if (pl.path[3]) m.panchayat_name = locs.get(pl.path[3]).name;
+      if (pl.region === 'nepal' && /^\s*\d+\s*$/.test(m.panchayat_name || '')) m.panchayat_name = 'Ward ' + m.panchayat_name.trim();
       m.block_name = tidyVillage(m.block_name); m.panchayat_name = tidyVillage(m.panchayat_name);
       m.village_name = tidyVillage(m.village_name);
-      if (m.block_name.length < 2) throw new Error('Enter the block name');
-      if (m.panchayat_name.length < 2) throw new Error('Enter the panchayat name');
+      if (pl.region === 'abroad') {
+        if (m.panchayat_name.length < 2) throw new Error('Enter the city');
+        if (m.block_name.length < 2) m.block_name = pl.name;
+        if (m.village_name.length < 2) m.village_name = m.panchayat_name;
+      } else m.native_place = null;
+      if (m.block_name.length < 2) throw new Error(pl.region === 'nepal' ? 'Enter the municipality / rural municipality' : 'Enter the block name');
+      if (m.panchayat_name.length < 2) throw new Error(pl.region === 'nepal' ? 'Enter the ward' : 'Enter the panchayat name');
       if (m.village_name.length < 2) throw new Error('Enter the village name');
       m.location_path = pl.path;
       if (m.booth_id) {
@@ -426,7 +466,7 @@
         return later(kids.map(l => {
           const ms = vis.filter(m => m.location_path.includes(l.id));
           const exp = allPanch.filter(p => p.path.includes(l.id)).reduce((a, p) => a + (p.expected_villages || 0), 0);
-          return { location_id: l.id, name: l.name, level: l.level, subdivision: l.subdivision, total: ms.length,
+          return { location_id: l.id, name: l.name, level: l.level, subdivision: l.subdivision, region: l.region, total: ms.length,
             verified: ms.filter(m => m.status === 'verified').length, pending: ms.filter(m => m.status === 'pending').length,
             villages_reached: new Set(ms.map(m => `${m.block_name}/${m.panchayat_name}:${m.village_name}`.toLowerCase())).size,
             expected_villages: exp || null };

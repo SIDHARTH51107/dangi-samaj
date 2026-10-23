@@ -23,7 +23,50 @@
   const STATUS = { verified: 'Verified', pending: 'Pending', rejected: 'Rejected' };
   const GENDER = { M: 'Male · पुरुष', F: 'Female · महिला', O: 'Other · अन्य' };
   const EDU = ['Illiterate / निरक्षर', 'Primary', 'Middle (8th)', 'Matric (10th)', 'Inter (12th)', 'Diploma / ITI', 'Graduate', 'Post-graduate', 'Professional (Engg / Medical / Law)'];
-  const OCC = ['Farmer / किसान', 'Business / व्यापार', 'Govt job / सरकारी नौकरी', 'Private job / निजी नौकरी', 'Teacher / शिक्षक', 'Student / छात्र', 'Labour / मजदूर', 'Homemaker / गृहिणी', 'Retired / सेवानिवृत्त'];
+  const OCC = ['Farmer / किसान', 'Business / व्यापार', 'Shopkeeper / दुकानदार', 'Govt job / सरकारी नौकरी', 'Private job / निजी नौकरी', 'Teacher / शिक्षक',
+    'Doctor / डॉक्टर', 'Engineer / इंजीनियर', 'Lawyer / वकील', 'Police / Army / पुलिस / सेना', 'Contractor / ठेकेदार', 'Driver / ड्राइवर',
+    'Self-employed / स्वरोज़गार', 'Working abroad / विदेश में काम', 'Social or political work / सामाजिक / राजनीतिक कार्य', 'Labour / मजदूर',
+    'Student / छात्र', 'Homemaker / गृहिणी', 'Retired / सेवानिवृत्त', 'Unemployed / बेरोज़गार'];
+  const MARITAL = { unmarried: 'अविवाहित · Unmarried', married: 'विवाहित · Married', widowed: 'विधुर / विधवा · Widowed', divorced: 'तलाकशुदा / अलग · Divorced or separated' };
+
+  /* regions: India (states and UTs), Nepal (provinces), abroad (NRI: countries) */
+  const REGIONS = ['india', 'nepal', 'abroad'];
+  const REGION = { india: 'भारत · India', nepal: 'नेपाल · Nepal', abroad: 'विदेश · Abroad (NRI)' };
+  const LVL_R = {
+    nepal: { state: 'प्रदेश · Province', district: 'जिल्ला · District', block: 'नगरपालिका / गाउँपालिका · Municipality', panchayat: 'वडा · Ward', village: 'गाँव / टोल · Village or tole' },
+    abroad: { state: 'विदेश · Abroad', district: 'देश · Country', block: 'राज्य / प्रांत · State or province', panchayat: 'शहर · City', village: 'इलाका · Area' }
+  };
+  const LVL_PL_R = {
+    nepal: { state: 'Provinces', district: 'Districts', block: 'Municipalities', panchayat: 'Wards', village: 'Villages' },
+    abroad: { state: 'Regions', district: 'Countries', block: 'States / provinces', panchayat: 'Cities', village: 'Areas' }
+  };
+  const lvl = (l, r) => (LVL_R[r] || LVL)[l];
+  const lvlPl = (l, r) => (LVL_PL_R[r] || LVL_PL)[l];
+  const lvlOne = (l, r) => lvlPl(l, r).toLowerCase().replace(/ies$/, 'y').replace(/s$/, '').replace(/ \/ provinces?$/, ' / province');
+
+  /* phone numbers: India as 10 digits, others stored as +<code><number> */
+  const W = window.WORLD_DATA || { india: '91', nepal: '977', countries: [] };
+  const DIALS = (() => {
+    const by = new Map([[W.india, ['India']], [W.nepal, ['Nepal']]]);
+    W.countries.forEach(([n, d]) => { if (d) { if (!by.has(d)) by.set(d, []); by.get(d).push(n.replace(/ \((\w+)\)$/, ' $1').replace(/^United (Arab Emirates|Kingdom|States) /, '')); } });
+    return [...by.entries()].map(([d, ns]) => [d, ns.length > 2 ? ns.slice(0, 2).join(', ') + '…' : ns.join(', ')]);
+  })();
+  const dialOf = country => (W.countries.find(c => c[0] === country) || [])[1] || '';
+  const waDigits = p => (String(p || '').startsWith('+') ? String(p).slice(1) : C.COUNTRY_CODE + p);
+  function splitPhone(p) {
+    p = String(p || '');
+    if (!p.startsWith('+')) return { cc: W.india, rest: p };
+    const d = [...DIALS].map(x => x[0]).sort((a, b) => b.length - a.length).find(c => p.slice(1).startsWith(c));
+    return d ? { cc: d, rest: p.slice(1 + d.length) } : { cc: '', rest: p };
+  }
+  function joinPhone(cc, raw) {
+    raw = String(raw || '').trim();
+    if (!raw) return '';
+    if (/^(\+|00)/.test(raw)) return storePhone(raw);
+    const d = raw.replace(/\D/g, '');
+    if (!cc || cc === W.india) return d.slice(-10);
+    return '+' + cc + d.replace(/^0+/, '');
+  }
 
   function toast(msg, kind = 'ok') {
     const t = document.createElement('div');
@@ -91,15 +134,26 @@
   /* ---------------------------------------------------------- location picker
      Cascading selects: State → District → Block → Panchayat → Village.
      locked: ids of a coordinator's own area (those levels are fixed). */
-  async function locPicker(box, { upto = 'panchayat', locked = [], allowAll = false, required = false, value = null, typed = false, onChange = () => {} } = {}) {
+  async function locPicker(box, { upto = 'panchayat', locked = [], allowAll = false, required = false, value = null, typed = false, tabs = false, region = 'india', onChange = () => {} } = {}) {
     const lv = LEVELS.slice(0, LEVELS.indexOf(upto) + 1);
     const vals = Array(lv.length).fill(null);
     let preset = [];
-    if (value) { const [v] = await data.locations([value]); if (v) preset = v.path; }
+    if (value) { const [v] = await data.locations([value]); if (v) { preset = v.path; region = v.region || region; } }
+    if (locked[0]) { const [st] = await data.locations([locked[0]]); if (st) region = st.region || region; }
+    let topItems = [];
+    const regionOf = () => (tabs ? region : (topItems.find(t => t.id === vals[0])?.region || 'india'));
     box.classList.add('loc-grid');
-    box.innerHTML = lv.map((l, i) => `<label class="field"><span>${LVL[l]}${required ? ' *' : ''}</span>
+    box.innerHTML = (tabs && !locked[0] ? `<div class="seg region-tabs" role="group" aria-label="Where do you live? · आप कहाँ रहते हैं?">${REGIONS.map(r =>
+      `<button type="button" data-region="${r}" class="${r === region ? 'on' : ''}">${REGION[r]}</button>`).join('')}</div>` : '')
+      + lv.map((l, i) => `<label class="field"><span data-lab="${i}">${LVL[l]}${required ? ' *' : ''}</span>
       <select data-i="${i}" autocomplete="off" ${required ? 'required' : ''}></select></label>`).join('');
     const sels = $$('select', box);
+    const labels = () => {
+      const r = regionOf();
+      $$('[data-lab]', box).forEach(sp => { sp.textContent = lvl(lv[+sp.dataset.lab], r) + (required ? ' *' : ''); });
+      // abroad has a single entry at the top: no need to show it
+      if (tabs) sels[0].closest('label').hidden = r === 'abroad';
+    };
 
     const deepest = () => { for (let i = vals.length - 1; i >= 0; i--) if (vals[i]) return { id: vals[i], level: lv[i], index: i }; return null; };
     let emptyAt = null;   // first level with no list (typed mode: those levels are typed by hand)
@@ -113,10 +167,17 @@
       if (i >= sels.length) return;
       const parent = i === 0 ? null : vals[i - 1];
       if (i > 0 && !parent) return;
-      const items = await data.children(parent);
+      let items = await data.children(parent);
+      if (i === 0) { topItems = items; if (tabs) items = items.filter(it => (it.region || 'india') === region); }
       const sel = sels[i];
       const optHTML = it => `<option value="${it.id}">${esc(it.name)}${it.name_hi ? ' · ' + esc(it.name_hi) : ''}</option>`;
-      if (items.some(it => it.subdivision)) {
+      if (i === 0 && !tabs && new Set(items.map(it => it.region || 'india')).size > 1) {
+        // states grouped as India / Nepal / abroad
+        sel.insertAdjacentHTML('beforeend', REGIONS.map(r => {
+          const list = items.filter(it => (it.region || 'india') === r);
+          return list.length ? `<optgroup label="${esc(REGION[r])}">${list.map(optHTML).join('')}</optgroup>` : '';
+        }).join(''));
+      } else if (items.some(it => it.subdivision)) {
         // blocks: group them under their subdivision (अनुमंडल)
         const groups = {};
         items.forEach(it => (groups[it.subdivision || 'Other'] ||= []).push(it));
@@ -124,21 +185,23 @@
           `<optgroup label="${esc(g)} अनुमंडल · subdivision">${groups[g].map(optHTML).join('')}</optgroup>`).join(''));
       } else sel.insertAdjacentHTML('beforeend', items.map(optHTML).join(''));
       if (!items.length) {
-        sel.innerHTML = `<option value="">No ${LVL_PL[lv[i]].toLowerCase()} added yet</option>`;
+        sel.innerHTML = `<option value="">No ${lvlPl(lv[i], regionOf()).toLowerCase()} added yet</option>`;
         if (i >= 2) emptyAt = i;   // a district or block without a list below it
         if (typed && i >= 2) for (let j = i; j < sels.length; j++) sels[j].closest('label').hidden = true;
         return;
       }
       sel.disabled = false;
       let pick = locked[i] ?? preset[i] ?? null;
-      if (pick == null && !allowAll && i <= 1) {
+      if (pick == null && !allowAll && i <= 1 && region === 'india') {
         const want = i === 0 ? C.DEFAULT_STATE : C.DEFAULT_DISTRICT;
         const def = items.find(it => it.name === want) || (i === 0 && items.length === 1 ? items[0] : null);
         if (def) pick = def.id;
       }
+      if (pick == null && !allowAll && i === 0 && items.length === 1) pick = items[0].id;
       if (pick != null && items.some(it => it.id === pick)) {
         sel.value = String(pick); vals[i] = pick;
         if (locked[i] != null) sel.disabled = true;
+        if (i === 0) labels();
         await fill(i + 1);
       }
     }
@@ -146,12 +209,22 @@
     sels.forEach((sel, i) => sel.addEventListener('change', async () => {
       vals[i] = sel.value ? +sel.value : null;
       preset = [];
+      if (i === 0) labels();
       await fill(i + 1);
-      onChange(deepest());
+      onChange(deepest(), regionOf());
     }));
+    $$('[data-region]', box).forEach(b => b.addEventListener('click', async () => {
+      if (b.dataset.region === region) return;
+      region = b.dataset.region; preset = [];
+      $$('[data-region]', box).forEach(x => x.classList.toggle('on', x === b));
+      labels();
+      await fill(0);
+      onChange(deepest(), regionOf());
+    }));
+    labels();
     await fill(0);
-    onChange(deepest());
-    return { get: deepest, panchayatId: () => vals[LEVELS.indexOf('panchayat')] || null, empty: () => (emptyAt == null ? null : lv[emptyAt]) };
+    onChange(deepest(), regionOf());
+    return { get: deepest, region: regionOf, panchayatId: () => vals[LEVELS.indexOf('panchayat')] || null, empty: () => (emptyAt == null ? null : lv[emptyAt]) };
   }
 
   const scopeLocked = () => (me && me.path ? me.path : []);
@@ -182,7 +255,7 @@
 
   function shell(view) {
     const demo = data.mode === 'demo';
-    const area = me ? (me.role === 'super_admin' ? 'All India' : me.location_name) : '';
+    const area = me ? (me.role === 'super_admin' ? 'All regions' : me.location_name) : '';
     app.innerHTML = `
       ${demo ? `<div class="demo-bar"><div class="wrap">Demo mode with sample data. Nothing here is real. Connect Supabase in <code>config.js</code> to go live.</div></div>` : ''}
       <header class="top"><div class="wrap top-in">
@@ -228,19 +301,23 @@
   /* ---------------------------------------------------------- member form (shared) */
   function memberFormHTML(m = {}, { coordinator = false } = {}) {
     const opt = (list, v) => list.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
+    const ph = m.phone ? splitPhone(m.phone) : { cc: W.india, rest: '' };
+    const occOther = m.occupation && !OCC.includes(m.occupation);
     return `
       <fieldset class="group"><legend>स्थान · Location</legend><div id="loc"></div>
         <p class="hint" id="typed-hint" hidden></p>
         <div class="grid2" id="typed-wrap" hidden>
-          <label class="field" id="tb-wrap"><span>प्रखंड / तहसील · Block *</span>
+          <label class="field" id="tb-wrap"><span id="tb-lab">प्रखंड / तहसील · Block *</span>
             <input id="f-tblock" list="tblock-list" autocomplete="off" value="${esc(m.block_name)}" placeholder="प्रखंड का नाम लिखें · type block name"><datalist id="tblock-list"></datalist></label>
-          <label class="field" id="tp-wrap"><span>पंचायत · Panchayat *</span>
+          <label class="field" id="tp-wrap"><span id="tp-lab">पंचायत · Panchayat *</span>
             <input id="f-tpanch" list="tpanch-list" autocomplete="off" value="${esc(m.panchayat_name)}" placeholder="पंचायत का नाम लिखें · type panchayat name"><datalist id="tpanch-list"></datalist></label>
         </div>
-        <label class="field"><span>गाँव का नाम · Village name *</span>
+        <label class="field"><span id="v-lab">गाँव का नाम · Village name *</span>
           <input id="f-village" list="village-list" required autocomplete="off" value="${esc(m.village_name)}" placeholder="पंचायत चुनें, फिर गाँव लिखें · choose panchayat, then type village">
           <datalist id="village-list"></datalist></label>
         <p class="hint" id="village-hint" hidden></p>
+        <label class="field" id="native-wrap" hidden><span>भारत / नेपाल में मूल गाँव और जिला · Native village and district in India or Nepal <small class="muted">(वैकल्पिक · optional)</small></span>
+          <input id="f-native" value="${esc(m.native_place)}" placeholder="जैसे: Bikopur, Imamganj, Gaya"></label>
         <label class="field" id="booth-wrap" hidden><span>मतदान बूथ · Polling booth <small class="muted">(पता हो तो · if known)</small></span>
           <select id="f-booth"></select></label>
       </fieldset>
@@ -255,15 +332,21 @@
       </fieldset>
       <fieldset class="group"><legend>संपर्क · Contact</legend>
         <div class="grid2">
-          <label class="field"><span>मोबाइल नंबर · Mobile *</span><input id="f-phone" type="tel" inputmode="numeric" required placeholder="10 अंक · 10 digits" value="${esc(m.phone)}"></label>
-          <label class="field"><span>व्हाट्सऐप नंबर · WhatsApp</span><input id="f-wa" type="tel" inputmode="numeric" placeholder="अगर अलग हो · if different" value="${m.whatsapp && m.whatsapp !== m.phone ? esc(m.whatsapp) : ''}"></label>
+          <label class="field span2"><span>मोबाइल नंबर · Mobile *</span><span class="phone-row">
+            <select id="f-cc" aria-label="Country code · देश कोड">${DIALS.map(([d, n]) => `<option value="${d}" ${d === ph.cc ? 'selected' : ''}>+${d} ${esc(n)}</option>`).join('')}</select>
+            <input id="f-phone" type="tel" inputmode="tel" required placeholder="10 अंक · 10 digits" value="${esc(ph.rest)}"></span></label>
+          <label class="field span2"><span>व्हाट्सऐप नंबर · WhatsApp <small class="muted">(अगर अलग हो · if different; another country: start with +)</small></span><input id="f-wa" type="tel" inputmode="tel" value="${m.whatsapp && m.whatsapp !== m.phone ? esc(splitPhone(m.whatsapp).cc === ph.cc ? splitPhone(m.whatsapp).rest : m.whatsapp) : ''}"></label>
           <label class="field span2"><span>पता / टोला / वार्ड · Address, tola or ward</span><input id="f-address" value="${esc(m.address)}"></label>
         </div>
       </fieldset>
-      <fieldset class="group"><legend>परिवार और काम · Family and work</legend>
+      <fieldset class="group"><legend>परिवार, विवाह और पेशा · Family, marriage and profession <small class="muted">(वैकल्पिक · optional)</small></legend>
         <div class="grid2">
+          <label class="field"><span>वैवाहिक स्थिति · Marital status</span><select id="f-marital"><option value="">— Select —</option>
+            ${Object.entries(MARITAL).map(([k, v]) => `<option value="${k}" ${m.marital_status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label class="field"><span>पेशा / व्यवसाय · Profession</span><select id="f-occ"><option value="">— Select —</option>${opt(OCC, m.occupation)}
+            <option value="__other" ${occOther ? 'selected' : ''}>अन्य · Other (type below)</option></select></label>
+          <label class="field span2" id="occ-other-wrap" ${occOther ? '' : 'hidden'}><span>पेशा लिखें · Type your profession</span><input id="f-occ-other" value="${occOther ? esc(m.occupation) : ''}" placeholder="जैसे: Architect, Pharmacist, Tailor"></label>
           <label class="field"><span>शिक्षा · Education</span><select id="f-edu"><option value="">— Select —</option>${opt(EDU, m.education)}</select></label>
-          <label class="field"><span>व्यवसाय · Occupation</span><input id="f-occ" list="occ-list" value="${esc(m.occupation)}"><datalist id="occ-list">${OCC.map(o => `<option value="${esc(o)}">`).join('')}</datalist></label>
           <label class="field"><span>परिवार के सदस्य · Family members</span><input id="f-family" type="number" inputmode="numeric" min="1" max="100" value="${esc(m.family_size)}"></label>
           ${coordinator ? `<label class="field"><span>स्थिति · Status</span><select id="f-status">${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${(m.status || 'verified') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>` : ''}
           ${coordinator ? `<label class="field span2"><span>टिप्पणी · Notes (only coordinators see this)</span><input id="f-notes" value="${esc(m.notes)}"></label>` : ''}
@@ -284,7 +367,7 @@
 
   /* location picker + village (typed, with suggestions) + polling booth.
      Where a district or block has no list below it yet, block / panchayat are typed too. */
-  async function mountPlace(root, { locked = [], placeId = null, boothId = null } = {}) {
+  async function mountPlace(root, { locked = [], placeId = null, boothId = null, startRegion = 'india' } = {}) {
     let listed = [];            // official villages of this panchayat, if any were added
     let booths = [];
     let currentP;
@@ -294,6 +377,28 @@
     const twrap = $('#typed-wrap', root), thint = $('#typed-hint', root);
     const tb = $('#f-tblock', root), tp = $('#f-tpanch', root);
     const opts = list => list.map(v => `<option value="${esc(v)}">`).join('');
+    const cc = $('#f-cc', root), phone = $('#f-phone', root);
+    let ccTouched = !!phone.value;
+    cc.addEventListener('change', () => { ccTouched = true; phone.placeholder = cc.value === W.india ? '10 अंक · 10 digits' : 'नंबर · number'; });
+    const occ = $('#f-occ', root);
+    occ.addEventListener('change', () => { $('#occ-other-wrap', root).hidden = occ.value !== '__other'; if (occ.value === '__other') $('#f-occ-other', root).focus(); });
+    const TYPED_LAB = {
+      india: ['प्रखंड / तहसील · Block *', 'पंचायत · Panchayat *', 'गाँव का नाम · Village name *', 'प्रखंड का नाम लिखें · type block name', 'पंचायत का नाम लिखें · type panchayat name', 'गाँव का नाम लिखें · type village name'],
+      nepal: ['नगरपालिका / गाउँपालिका · Municipality or rural municipality *', 'वडा नं. · Ward no. *', 'गाँव / टोल · Village or tole *', 'जैसे: Birgunj Metropolitan City', 'जैसे: 5', 'गाँव या टोल का नाम · village or tole'],
+      abroad: ['राज्य / प्रांत · State or province', 'शहर · City *', 'इलाका / मोहल्ला · Area or locality', 'वैकल्पिक · optional (e.g. Texas, Dubai)', 'शहर का नाम · city', 'वैकल्पिक · optional']
+    };
+    let region = 'india';
+    function setRegion(r, country) {
+      region = r || 'india';
+      const t = TYPED_LAB[region];
+      $('#tb-lab', root).textContent = t[0]; $('#tp-lab', root).textContent = t[1]; $('#v-lab', root).textContent = t[2];
+      tb.placeholder = t[3]; tp.placeholder = t[4];
+      $('#native-wrap', root).hidden = region !== 'abroad';
+      if (!ccTouched) {
+        const want = region === 'nepal' ? W.nepal : region === 'abroad' ? dialOf(country) : W.india;
+        if (want && [...cc.options].some(o => o.value === want)) { cc.value = want; cc.dispatchEvent(new Event('change')); ccTouched = false; }
+      }
+    }
 
     async function onPanchayat(pid) {
       if (pid === currentP) return;
@@ -335,38 +440,53 @@
     tb.addEventListener('change', () => refreshTyped('panchayat'));
     tp.addEventListener('change', () => refreshTyped('village'));
 
-    async function onPlace(d) {
+    async function onPlace(d, r) {
       const empty = picker ? picker.empty() : null;
       const typedHere = d && empty && ((d.level === 'district' && empty === 'block') || (d.level === 'block' && empty === 'panchayat'));
+      const [loc] = d ? await data.locations([d.id]) : [null];
+      setRegion(loc ? loc.region : r, loc && loc.region === 'abroad' && loc.level === 'district' ? loc.name : null);
       if (typedHere) {
-        const [loc] = await data.locations([d.id]);
-        typedBase = { id: d.id, level: d.level, name: loc.name };
+        typedBase = { id: d.id, level: d.level, name: loc.name, region };
         twrap.hidden = false; $('#tb-wrap', root).hidden = d.level !== 'district';
-        thint.innerHTML = d.level === 'district'
+        thint.innerHTML = region === 'abroad'
+          ? `कृपया शहर लिखें; राज्य / प्रांत और इलाका वैकल्पिक हैं। · Type the city you live in, in ${esc(loc.name)}. State or province and area are optional.`
+          : region === 'nepal'
+          ? `कृपया अपनी नगरपालिका / गाउँपालिका, वडा नं. और गाँव / टोल लिखें। · Please type your municipality, ward number and village or tole in ${esc(loc.name)}.`
+          : d.level === 'district'
           ? `${esc(loc.name)} जिले की प्रखंड / पंचायत सूची अभी नहीं जुड़ी है — कृपया नाम लिखें। · Block and panchayat lists for ${esc(loc.name)} are not added yet, so please type them.`
           : `${esc(loc.name)} की पंचायत सूची अभी नहीं जुड़ी है — कृपया नाम लिखें। · The panchayat list for ${esc(loc.name)} is not added yet, so please type it.`;
         thint.hidden = false;
         currentP = undefined; await onPanchayat(null);
         input.disabled = false; dl.innerHTML = '';
+        input.placeholder = TYPED_LAB[region][5];
         await refreshTyped('block');
       } else {
         typedBase = null; twrap.hidden = true; thint.hidden = true;
+        input.placeholder = d && d.level === 'state' && region === 'abroad' ? 'पहले देश चुनें · choose the country first' : 'पंचायत चुनें, फिर गाँव लिखें · choose panchayat, then type village';
         await onPanchayat(d && d.level === 'panchayat' ? d.id : null);
       }
     }
     let picker = null;
-    picker = await locPicker($('#loc', root), { required: true, typed: true, locked, value: placeId, onChange: d => onPlace(d) });
-    await onPlace(picker.get());
+    picker = await locPicker($('#loc', root), { required: true, typed: true, tabs: true, region: startRegion, locked, value: placeId, onChange: (d, r) => onPlace(d, r) });
+    await onPlace(picker.get(), picker.region());
 
     return {
       get() {
         if (typedBase) {
-          const b = tidyVillage(blockName()), p = tidyVillage(tp.value), v = tidyVillage(input.value);
-          if (b.length < 2) throw new Error('कृपया प्रखंड का नाम लिखें · Please type the block name.');
-          if (p.length < 2) throw new Error('कृपया पंचायत का नाम लिखें · Please type the panchayat name.');
-          if (v.length < 2) throw new Error('कृपया गाँव का नाम लिखें · Please type the village name.');
+          let b = tidyVillage(blockName()), p = tidyVillage(tp.value), v = tidyVillage(input.value);
+          const r = typedBase.region;
+          if (r === 'nepal' && /^\d+$/.test(p)) p = 'Ward ' + p;
+          if (r === 'abroad') {
+            if (p.length < 2) throw new Error('कृपया शहर का नाम लिखें · Please type your city.');
+            return { place_id: typedBase.id, block_name: b || null, panchayat_name: p, village_name: v || p, booth_id: null,
+              native_place: $('#f-native', root).value.trim() || null };
+          }
+          if (b.length < 2) throw new Error(r === 'nepal' ? 'कृपया नगरपालिका / गाउँपालिका लिखें · Please type your municipality.' : 'कृपया प्रखंड का नाम लिखें · Please type the block name.');
+          if (p.length < 2) throw new Error(r === 'nepal' ? 'कृपया वडा नं. लिखें · Please type your ward number.' : 'कृपया पंचायत का नाम लिखें · Please type the panchayat name.');
+          if (v.length < 2) throw new Error(r === 'nepal' ? 'कृपया गाँव / टोल लिखें · Please type your village or tole.' : 'कृपया गाँव का नाम लिखें · Please type the village name.');
           return { place_id: typedBase.id, block_name: b, panchayat_name: p, village_name: v, booth_id: null };
         }
+        if (picker.region() === 'abroad') throw new Error('कृपया देश चुनें · Please choose the country.');
         const pid = picker.panchayatId();
         if (!pid) throw new Error('कृपया प्रखंड और पंचायत चुनें · Please choose the block and panchayat.');
         const name = tidyVillage(input.value);
@@ -381,35 +501,39 @@
   function readMember(root, place) {
     const v = id => $(id, root)?.value.trim() ?? '';
     const n = id => (v(id) ? +v(id) : null);
+    const cc = v('#f-cc');
+    const occ = v('#f-occ') === '__other' ? v('#f-occ-other') : v('#f-occ');
     const m = {
       full_name: v('#f-name'), guardian_name: v('#f-guardian') || null, gender: v('#f-gender') || null,
-      age: n('#f-age'), phone: cleanPhone(v('#f-phone')), whatsapp: cleanPhone(v('#f-wa')) || null,
-      address: v('#f-address') || null, education: v('#f-edu') || null, occupation: v('#f-occ') || null,
+      age: n('#f-age'), phone: joinPhone(cc, v('#f-phone')), whatsapp: joinPhone(cc, v('#f-wa')) || null,
+      address: v('#f-address') || null, education: v('#f-edu') || null, occupation: occ || null,
+      marital_status: v('#f-marital') || null, native_place: null,
       family_size: n('#f-family'), consent: $('#f-consent', root).checked,
       ...place.get()
     };
     if ($('#f-status', root)) m.status = v('#f-status');
     if ($('#f-notes', root)) m.notes = v('#f-notes') || null;
-    if (!/^[6-9]\d{9}$/.test(m.phone)) throw new Error('मोबाइल नंबर 10 अंकों का होना चाहिए · Enter a valid 10-digit mobile number.');
-    if (m.whatsapp && !/^[6-9]\d{9}$/.test(m.whatsapp)) throw new Error('WhatsApp number must be 10 digits.');
+    if (!phoneOk(m.phone)) throw new Error(cc === W.india ? 'मोबाइल नंबर 10 अंकों का होना चाहिए · Enter a valid 10-digit mobile number.' : 'कृपया सही मोबाइल नंबर लिखें · Enter a valid mobile number for the chosen country code.');
+    if (m.whatsapp && !phoneOk(m.whatsapp)) throw new Error('WhatsApp नंबर सही नहीं है · Check the WhatsApp number.');
     if (!m.consent) throw new Error('सहमति ज़रूरी है · Please tick the consent box.');
     return m;
   }
 
   /* ---------------------------------------------------------- PUBLIC: registration */
-  async function viewRegister(root) {
+  async function viewRegister(root, { region = 'india' } = {}) {
     const queued = store.get(QKEY, []).length;
     root.innerHTML = `
       <section class="intro">
         <p class="eyebrow">सदस्य पंजीकरण · Member registration</p>
         <h1>दांगी समाज परिवार से जुड़ें</h1>
-        <p class="lede">Fill this form once for each adult member. Your details reach only the coordinators of your own district, block and panchayat.</p>
+        <p class="lede">Fill this form once for each adult member. Your details reach only the coordinators of your own district, block and panchayat.
+          Dangi families in <b>Nepal</b> and those living <b>abroad (NRI)</b> can register too: choose Nepal or Abroad below.</p>
       </section>
       ${queued ? `<div class="note warn">${queued} form(s) are saved on this phone and will be sent when the internet is back.</div>` : ''}
       <form class="card form" id="reg" novalidate>${memberFormHTML()}
         <div class="row end"><button class="btn primary big" type="submit">पंजीकरण करें · Register</button></div>
       </form>`;
-    const picker = await mountPlace(root);
+    const picker = await mountPlace(root, { startRegion: region });
     $('#reg', root).addEventListener('submit', async e => {
       e.preventDefault();
       const btn = e.submitter || $('button[type=submit]', root);
@@ -504,7 +628,7 @@
     const typedLevel = !effTb ? 'block' : !effTp ? 'panchayat' : 'village';
     const trows = typedMode ? await data.typedBreakdown(node, effTb, effTp) : [];
     const crumbs = [];
-    if (!scopeId) crumbs.push({ id: null, name: 'All India' });
+    if (!scopeId) crumbs.push({ id: null, name: 'All · सभी' });
     if (nodeLoc) {
       const anc = await data.locations(nodeLoc.path);
       anc.forEach(a => { if (!scopeId || a.path.includes(scopeId)) crumbs.push({ id: a.id, name: a.name }); });
@@ -527,6 +651,7 @@
     const reached = atPanchayat ? vrows.length : typedMode ? (typedLevel === 'village' ? trows.length : null) : rows.reduce((a, r) => a + (r.villages_reached || 0), 0);
     const expected = atPanchayat ? nodeLoc.expected_villages : rows.reduce((a, r) => a + (r.expected_villages || 0), 0) || null;
     const childLevel = rows[0]?.level;
+    const R = nodeLoc?.region || 'india';
     const max = Math.max(1, ...(atPanchayat ? vrows : rows).map(r => r.total));
     const bar = r => `<td class="bar-col"><span class="bar"><i style="width:${(r.total / max * 100).toFixed(1)}%"></i><i class="v" style="width:${(r.verified / max * 100).toFixed(1)}%"></i></span></td>`;
     const vr = r => (r.expected_villages ? `${num(r.villages_reached)}<small> / ${num(r.expected_villages)}</small>` : num(r.villages_reached));
@@ -536,7 +661,16 @@
 
     // blocks: show them under their subdivision with a subtotal line
     let body;
-    if (rows.some(r => r.subdivision)) {
+    if (!nodeLoc && rows.some(r => r.region && r.region !== 'india')) {
+      // top level: India, Nepal and abroad shown separately
+      body = REGIONS.map(g => {
+        const list = rows.filter(r => (r.region || 'india') === g);
+        if (!list.length) return '';
+        const t = sum(list);
+        const what = g === 'india' ? `${list.length} states and UTs` : g === 'nepal' ? `${list.length} provinces` : 'members living outside India and Nepal';
+        return `<tr class="grp"><td colspan="6">${esc(REGION[g])} <span>${num(t.total)} members · ${what}</span></td></tr>${list.map(rowHTML).join('')}`;
+      }).join('');
+    } else if (rows.some(r => r.subdivision)) {
       const groups = {};
       rows.forEach(r => (groups[r.subdivision || 'Other'] ||= []).push(r));
       body = Object.entries(groups).sort((a, b) => sum(b[1]).total - sum(a[1]).total || a[0].localeCompare(b[0])).map(([g, list]) => {
@@ -549,18 +683,18 @@
     let table = '';
     if (rows.length) {
       table = `<section class="card flush">
-        <div class="table-head"><h2 class="h3">By ${LVL_PL[childLevel].toLowerCase().replace(/s$/, '')}</h2><span class="muted small">Tap a row to open it</span></div>
-        <div class="tbl-wrap"><table class="tbl drill">${head(LVL[childLevel])}<th class="num">Villages reached</th><th class="bar-col" aria-hidden="true"></th></tr></thead>
+        <div class="table-head"><h2 class="h3">By ${!nodeLoc ? 'state, province or region' : lvlOne(childLevel, R)}</h2><span class="muted small">Tap a row to open it</span></div>
+        <div class="tbl-wrap"><table class="tbl drill">${head(nodeLoc ? lvl(childLevel, R) : 'State / province')}<th class="num">${R === 'abroad' ? 'Places' : 'Villages reached'}</th><th class="bar-col" aria-hidden="true"></th></tr></thead>
         <tbody>${body}</tbody></table></div></section>`;
     } else if (typedMode && trows.length) {
       const tmax = Math.max(1, ...trows.map(r => r.total));
       table = `<section class="card flush">
-        <div class="table-head"><h2 class="h3">By ${typedLevel}</h2><span class="muted small">Names as typed by members · tap a row to open it</span></div>
-        <div class="tbl-wrap"><table class="tbl drill">${head(LVL[typedLevel])}<th class="bar-col" aria-hidden="true"></th></tr></thead>
+        <div class="table-head"><h2 class="h3">By ${lvlOne(typedLevel, R)}</h2><span class="muted small">Names as typed by members · tap a row to open it</span></div>
+        <div class="tbl-wrap"><table class="tbl drill">${head(lvl(typedLevel, R))}<th class="bar-col" aria-hidden="true"></th></tr></thead>
         <tbody>${trows.map(r => `<tr data-typed="${esc(r.name)}" tabindex="0"><td>${esc(r.name)}</td><td class="num">${num(r.total)}</td>
           <td class="num hide-sm">${num(r.verified)}</td><td class="num hide-sm">${num(r.pending)}</td>
           <td class="bar-col"><span class="bar"><i style="width:${(r.total / tmax * 100).toFixed(1)}%"></i><i class="v" style="width:${(r.verified / tmax * 100).toFixed(1)}%"></i></span></td></tr>`).join('')}</tbody></table></div></section>
-        <p class="muted small">The ${nodeLoc.level === 'district' ? 'block and panchayat lists for this district are' : 'panchayat list for this block is'} not added yet, so members typed these names. If one place appears under two spellings, correct it with Edit on the member list.</p>`;
+        <p class="muted small">${R === 'india' ? `The ${nodeLoc.level === 'district' ? 'block and panchayat lists for this district are' : 'panchayat list for this block is'} not added yet, so members` : 'Members'} typed these names. If one place appears under two spellings, correct it with Edit on the member list.</p>`;
     } else if (atPanchayat && vrows.length) {
       table = `<section class="card flush">
         <div class="table-head"><h2 class="h3">By village</h2><span class="muted small">Names as typed by members · tap to see who is registered</span></div>
@@ -570,7 +704,7 @@
         <p class="muted small">If one village appears under two spellings, open its members and correct the village name with Edit.</p>`;
     } else {
       table = `<div class="card empty"><p>${atPanchayat ? 'No one from this panchayat has registered yet. Share the registration link in its WhatsApp groups.'
-        : typedMode ? `No one from ${esc(nodeLoc.name)} has registered yet. Members from here type their block, panchayat and village on the form.` : 'No areas have been added below this one yet. Add them under Locations.'}</p></div>`;
+        : typedMode ? `No one from ${esc(nodeLoc.name)} has registered yet. Members from here type their ${R === 'abroad' ? 'city' : R === 'nepal' ? 'municipality, ward and village' : 'block, panchayat and village'} on the form.` : 'No areas have been added below this one yet. Add them under Locations.'}</p></div>`;
     }
 
     if (by === 'booth') {
@@ -592,7 +726,7 @@
     }
     const assemblies = [...new Set(boothRows.map(r => r.assembly))];
     const toggle = boothRows.length ? `<div class="seg" role="group" aria-label="Show">
-        <button class="${by === 'area' ? 'on' : ''}" data-by="area">${atPanchayat ? 'By village' : 'By ' + (LVL_PL[childLevel] || 'area').toLowerCase().replace(/s$/, '')}</button>
+        <button class="${by === 'area' ? 'on' : ''}" data-by="area">${atPanchayat ? 'By village' : 'By ' + (childLevel ? lvlOne(childLevel, R) : 'area')}</button>
         <button class="${by === 'booth' ? 'on' : ''}" data-by="booth">By polling booth</button></div>` : '';
     const boothsWith = boothRows.filter(r => r.total > 0).length;
 
@@ -600,15 +734,15 @@
       <nav class="crumbs" aria-label="Area">${crumbs.map((c, i) => i === crumbs.length - 1
         ? `<span aria-current="page">${esc(c.name)}</span>`
         : `<button data-node="${c.id ?? ''}"${c.tb ? ` data-ctb="${esc(c.tb)}"` : ''}${c.tp ? ` data-ctp="${esc(c.tp)}"` : ''}>${esc(c.name)}</button><i>›</i>`).join('')}</nav>
-      <div class="head-row"><div><h1 class="h2">${esc(effTp || (nodeLoc?.level === 'district' && effTb) || nodeLoc?.name || 'All India')}</h1>
-        ${nodeLoc ? `<p class="muted small sub">${effTp ? LVL.panchayat + ' · ' + esc(effTb) : effTb && nodeLoc.level === 'district' ? LVL.block + ' · ' + esc(nodeLoc.name) : LVL[nodeLoc.level]}${nodeLoc.subdivision ? ` · ${esc(nodeLoc.subdivision)} subdivision` : ''}</p>` : ''}</div>
+      <div class="head-row"><div><h1 class="h2">${esc(effTp || (nodeLoc?.level === 'district' && effTb) || nodeLoc?.name || 'India, Nepal and NRI')}</h1>
+        ${nodeLoc ? `<p class="muted small sub">${effTp ? lvl('panchayat', R) + ' · ' + esc(effTb) : effTb && nodeLoc.level === 'district' ? lvl('block', R) + ' · ' + esc(nodeLoc.name) : lvl(nodeLoc.level, R)}${nodeLoc.subdivision ? ` · ${esc(nodeLoc.subdivision)} subdivision` : ''}</p>` : ''}</div>
         <div class="row"><button class="btn" id="ov-members">View members</button><button class="btn primary" id="ov-msg">Message these members</button></div></div>
       ${assemblies.length ? `<p class="muted small sub">Polling booths: ${assemblies.map(a => esc(a) + ' Vidhan Sabha').join(', ')}</p>` : ''}
       <div class="stats">
         <div class="stat"><span>Registered members</span><b>${num(tot.total)}</b></div>
         <div class="stat ok"><span>Verified</span><b>${num(tot.verified)}</b></div>
         <div class="stat warn"><span>Waiting for verification</span><b>${num(tot.pending)}</b>${tot.pending ? '<button class="link" id="ov-pending">Review now →</button>' : ''}</div>
-        ${reached != null ? `<div class="stat"><span>Villages reached</span><b>${num(reached)}${expected ? `<small> of ${num(expected)}</small>` : ''}</b>
+        ${reached != null && R !== 'abroad' ? `<div class="stat"><span>Villages reached</span><b>${num(reached)}${expected ? `<small> of ${num(expected)}</small>` : ''}</b>
           ${expected ? `<span class="meter" aria-hidden="true"><i style="width:${Math.min(100, reached / expected * 100).toFixed(1)}%"></i></span>` : ''}</div>` : ''}
         ${boothRows.length ? `<div class="stat"><span>Booths with members</span><b>${num(boothsWith)}<small> of ${num(boothRows.length)}</small></b>
           <span class="meter" aria-hidden="true"><i style="width:${(boothsWith / boothRows.length * 100).toFixed(1)}%"></i></span></div>` : ''}
@@ -654,8 +788,8 @@
       <div class="grid-auto">
         <label class="field"><span>Search name or mobile</span><input id="q" type="search" value="${esc(f.q)}"></label>
         <label class="field"><span>Village · गाँव</span><input id="vf" type="search" value="${esc(f.village)}"></label>
-        <label class="field"><span>Block name · प्रखंड</span><input id="bnf" type="search" value="${esc(f.blockName)}"></label>
-        <label class="field"><span>Panchayat name · पंचायत</span><input id="pnf" type="search" value="${esc(f.panchayatName)}"></label>
+        <label class="field"><span>Block name · प्रखंड <small class="muted">(Nepal: municipality · abroad: state)</small></span><input id="bnf" type="search" value="${esc(f.blockName)}"></label>
+        <label class="field"><span>Panchayat name · पंचायत <small class="muted">(Nepal: ward · abroad: city)</small></span><input id="pnf" type="search" value="${esc(f.panchayatName)}"></label>
         <label class="field"><span>Booth no. · बूथ</span><input id="bf" type="number" inputmode="numeric" min="1" value="${esc(f.boothNo)}"></label>
         ${showStatus ? `<label class="field"><span>Status</span><select id="st"><option value="">All except rejected</option>
           ${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>` : ''}
@@ -663,7 +797,9 @@
           ${Object.entries(GENDER).map(([k, v]) => `<option value="${k}" ${f.gender === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
         <label class="field"><span>Age from</span><input id="a1" type="number" min="0" max="120" value="${esc(f.ageMin)}"></label>
         <label class="field"><span>Age to</span><input id="a2" type="number" min="0" max="120" value="${esc(f.ageMax)}"></label>
-        <label class="field"><span>Occupation</span><input id="oc" list="occ-list2" value="${esc(f.occupation)}"><datalist id="occ-list2">${OCC.map(o => `<option value="${esc(o)}">`).join('')}</datalist></label>
+        <label class="field"><span>Profession · पेशा</span><input id="oc" list="occ-list2" value="${esc(f.occupation)}" placeholder="All"><datalist id="occ-list2">${OCC.map(o => `<option value="${esc(o)}">`).join('')}</datalist></label>
+        <label class="field"><span>Marital status · वैवाहिक स्थिति</span><select id="ms"><option value="">All</option>
+          ${Object.entries(MARITAL).map(([k, v]) => `<option value="${k}" ${f.maritalStatus === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
       </div>
       <div class="row end"><button type="button" class="btn ghost" id="clr">Clear</button><button class="btn primary" type="submit">Apply filters</button></div></form>`;
     const picker = await locPicker($('#f-loc', root), { allowAll: true, locked: scopeLocked(), value: f.locationId });
@@ -674,7 +810,7 @@
       const v = id => $(id, root)?.value.trim() || '';
       onApply({
         locationId: g ? g.id : (me.location_id || null), q: v('#q'), village: v('#vf'), blockName: v('#bnf'), panchayatName: v('#pnf'), boothNo: v('#bf') ? +v('#bf') : null, status: v('#st'), gender: v('#gd'),
-        ageMin: v('#a1') ? +v('#a1') : null, ageMax: v('#a2') ? +v('#a2') : null, occupation: v('#oc')
+        ageMin: v('#a1') ? +v('#a1') : null, ageMax: v('#a2') ? +v('#a2') : null, occupation: v('#oc'), maritalStatus: v('#ms')
       });
     };
   }
@@ -686,8 +822,9 @@
     const size = 50;
     const { rows, count } = await data.listMembers(q, { offset: page * size, limit: size });
     await primeNames(rows);
-    const places = await Promise.all(rows.map(async r => [r.village_name, r.panchayat_name, r.block_name,
-      r.location_path.length <= 3 ? await pathText(r.location_path.slice(0, 2), 'district') : null].filter(Boolean).join(' · ')));
+    const dedupe = parts => parts.filter((x, i) => x && (i === 0 || x.toLowerCase() !== String(parts[i - 1] || '').toLowerCase()));
+    const places = await Promise.all(rows.map(async r => dedupe([r.village_name, r.panchayat_name, r.block_name,
+      r.location_path.length <= 3 ? await pathText(r.location_path.slice(0, 2), 'district') : null]).join(' · ')));
     const admin = me.role === 'super_admin';
 
     root.innerHTML = `<div class="head-row"><h1 class="h2">Members</h1>
@@ -695,10 +832,10 @@
       <div id="fbar"></div>
       ${rows.length ? `<ul class="mlist">${rows.map((m, i) => `<li class="mrow">
         <div class="m-main"><div class="m-name">${esc(m.full_name)} <span class="pill ${m.status}">${STATUS[m.status]}</span>${m.booth_no ? ` <span class="pill booth">Booth ${m.booth_no}</span>` : ''}</div>
-          <div class="m-sub">${m.guardian_name ? `पिता/पति: ${esc(m.guardian_name)} · ` : ''}${[m.gender && GENDER[m.gender].split(' ·')[0], m.age && m.age + ' yrs', m.occupation && m.occupation.split(' /')[0]].filter(Boolean).map(esc).join(' · ')}</div>
-          <div class="m-place">${esc(places[i])}</div></div>
+          <div class="m-sub">${m.guardian_name ? `पिता/पति: ${esc(m.guardian_name)} · ` : ''}${[m.gender && GENDER[m.gender].split(' ·')[0], m.age && m.age + ' yrs', m.marital_status && MARITAL[m.marital_status].split(' · ')[1], m.occupation && m.occupation.split(' /')[0]].filter(Boolean).map(esc).join(' · ')}</div>
+          <div class="m-place">${esc(places[i])}${m.native_place ? ` <span class="muted">· मूल स्थान / native: ${esc(m.native_place)}</span>` : ''}</div></div>
         <div class="m-phone"><span class="mono">${esc(m.phone)}</span>
-          <a class="link small" href="https://wa.me/${C.COUNTRY_CODE}${esc(m.whatsapp || m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>
+          <a class="link small" href="https://wa.me/${esc(waDigits(m.whatsapp || m.phone))}" target="_blank" rel="noopener">WhatsApp</a></div>
         <div class="m-act">
           ${m.status !== 'verified' ? `<button class="btn small ok" data-act="verified" data-id="${m.id}">Verify</button>` : ''}
           ${m.status === 'pending' ? `<button class="btn small ghost" data-act="rejected" data-id="${m.id}">Reject</button>` : ''}
@@ -767,7 +904,7 @@
     await primeNames(list);
     const seen = new Set();
     const contacts = list.filter(m => { const n = m.whatsapp || m.phone; if (seen.has(n)) return false; seen.add(n); return true; });
-    const where = f.locationId ? (await data.locations([f.locationId]))[0]?.name : (me.location_name || 'All India');
+    const where = f.locationId ? (await data.locations([f.locationId]))[0]?.name : (me.location_name || 'All regions');
     const tpl = store.get('msg-tpl', 'नमस्कार {name} जी,\n\n');
 
     root.innerHTML = `<div class="head-row"><h1 class="h2">Send a message</h1></div>
@@ -792,27 +929,29 @@
     await filterBar($('#fbar', root), f, { onApply: nf => go('message', { filter: nf }) });
     const tplEl = $('#tpl', root);
     tplEl.oninput = () => store.set('msg-tpl', tplEl.value);
-    const nums = sep => contacts.map(m => C.COUNTRY_CODE + (m.whatsapp || m.phone)).join(sep);
+    const nums = sep => contacts.map(m => waDigits(m.whatsapp || m.phone)).join(sep);
     $('#c-comma').onclick = () => copyText(nums(','), `${contacts.length} numbers`);
     $('#c-lines').onclick = () => copyText(nums('\n'), `${contacts.length} numbers`);
 
     const placeOf = async m => {
       const locs = await data.locations(m.location_path);
       const by = Object.fromEntries(locs.map(l => [l.level, l.name]));
+      by.region = locs[0]?.region || 'india';
       by.village = m.village_name;
       if (m.block_name) by.block = m.block_name;
       if (m.panchayat_name) by.panchayat = m.panchayat_name;
       return by;
     };
     $('#d-csv').onclick = async () => {
-      const head = ['Name', 'Father/Husband', 'Gender', 'Age', 'Mobile', 'WhatsApp', 'Education', 'Occupation', 'Family members', 'Address', 'Village', 'Panchayat', 'Block', 'District', 'State', 'Booth no', 'Booth name', 'Status', 'Registered on'];
+      const head = ['Name', 'Father/Husband', 'Gender', 'Age', 'Marital status', 'Mobile', 'WhatsApp', 'Education', 'Profession', 'Family members', 'Address',
+        'Village / tole / area', 'Panchayat / ward / city', 'Block / municipality / state', 'District / country', 'State / province', 'Region', 'Native place (NRI)', 'Booth no', 'Booth name', 'Status', 'Registered on'];
       const bmap = new Map((await data.boothsByIds(list.map(m => m.booth_id))).map(b => [b.id, b]));
       const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
       const lines = [head.join(',')];
       for (const m of list) {
         const p = await placeOf(m);
-        lines.push([m.full_name, m.guardian_name, m.gender, m.age, m.phone, m.whatsapp, m.education, m.occupation, m.family_size, m.address,
-          p.village, p.panchayat, p.block, p.district, p.state, m.booth_no, bmap.get(m.booth_id)?.name, m.status, (m.created_at || '').slice(0, 10)].map(cell).join(','));
+        lines.push([m.full_name, m.guardian_name, m.gender, m.age, m.marital_status && MARITAL[m.marital_status].split(' · ')[1], m.phone, m.whatsapp, m.education, m.occupation, m.family_size, m.address,
+          p.village, p.panchayat, p.block, p.district, p.state, { india: 'India', nepal: 'Nepal', abroad: 'Abroad (NRI)' }[p.region] || '', m.native_place, m.booth_no, bmap.get(m.booth_id)?.name, m.status, (m.created_at || '').slice(0, 10)].map(cell).join(','));
       }
       download(`dangi-members-${(where || 'all').replace(/\W+/g, '-')}.csv`, '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
     };
@@ -820,7 +959,7 @@
       const out = [];
       for (const m of contacts) {
         const p = await placeOf(m);
-        out.push(['BEGIN:VCARD', 'VERSION:3.0', `FN:${m.full_name} (${p.village || ''})`, `TEL;TYPE=CELL:+${C.COUNTRY_CODE}${m.whatsapp || m.phone}`,
+        out.push(['BEGIN:VCARD', 'VERSION:3.0', `FN:${m.full_name} (${p.village || ''})`, `TEL;TYPE=CELL:+${waDigits(m.whatsapp || m.phone)}`,
           `ORG:Dangi Samaj - ${p.block || ''}`, 'END:VCARD'].join('\r\n'));
       }
       download(`dangi-contacts-${(where || 'all').replace(/\W+/g, '-')}.vcf`, out.join('\r\n'), 'text/vcard');
@@ -831,9 +970,9 @@
       $('#queue').innerHTML = `<section class="card flush"><div class="table-head"><h2 class="h3">Tap each person to open WhatsApp</h2>
         <span class="muted small" id="q-count">0 of ${contacts.length} opened</span></div>
         <ul class="queue">${contacts.map((m, i) => `<li><span><b>${esc(m.full_name)}</b><small class="mono">${esc(m.whatsapp || m.phone)}</small></span>
-          <a class="btn small" data-q="${i}" target="_blank" rel="noopener" href="https://wa.me/${C.COUNTRY_CODE}${m.whatsapp || m.phone}?text=${encodeURIComponent(msgFor(m))}">Open WhatsApp</a></li>`).join('')}</ul></section>`;
+          <a class="btn small" data-q="${i}" target="_blank" rel="noopener" href="https://wa.me/${waDigits(m.whatsapp || m.phone)}?text=${encodeURIComponent(msgFor(m))}">Open WhatsApp</a></li>`).join('')}</ul></section>`;
       $$('[data-q]').forEach(a => {
-        a.addEventListener('pointerdown', () => { a.href = `https://wa.me/${C.COUNTRY_CODE}${contacts[+a.dataset.q].whatsapp || contacts[+a.dataset.q].phone}?text=${encodeURIComponent(msgFor(contacts[+a.dataset.q]))}`; });
+        a.addEventListener('pointerdown', () => { a.href = `https://wa.me/${waDigits(contacts[+a.dataset.q].whatsapp || contacts[+a.dataset.q].phone)}?text=${encodeURIComponent(msgFor(contacts[+a.dataset.q]))}`; });
         a.addEventListener('click', () => { sent.add(a.dataset.q); a.classList.add('done'); a.textContent = 'Opened ✓'; $('#q-count').textContent = `${sent.size} of ${contacts.length} opened`; });
       });
       $('#queue').scrollIntoView({ behavior: 'smooth' });
@@ -848,20 +987,23 @@
     const nodeLoc = node ? (await data.locations([node]))[0] : null;
     const kids = await data.children(node);
     const childLevel = nodeLoc ? LEVELS[LEVELS.indexOf(nodeLoc.level) + 1] : 'state';
+    const R = nodeLoc?.region || 'india';
     const crumbs = [];
-    if (!scopeId) crumbs.push({ id: '', name: 'All India' });
+    if (!scopeId) crumbs.push({ id: '', name: 'All · सभी' });
     if (nodeLoc) (await data.locations(nodeLoc.path)).forEach(a => { if (!scopeId || a.path.includes(scopeId)) crumbs.push({ id: a.id, name: a.name }); });
     const canAdd = childLevel && (admin || childLevel === 'village');
     const pBooths = nodeLoc?.level === 'panchayat' ? await data.booths(node) : [];
 
     root.innerHTML = `<nav class="crumbs">${crumbs.map((c, i) => i === crumbs.length - 1 ? `<span>${esc(c.name)}</span>` : `<button data-n="${c.id}">${esc(c.name)}</button><i>›</i>`).join('')}</nav>
-      <div class="head-row"><h1 class="h2">${childLevel ? LVL_PL[childLevel] : 'Village'} ${nodeLoc ? 'in ' + esc(nodeLoc.name) : ''}</h1><span class="muted">${kids.length} listed</span></div>
+      <div class="head-row"><h1 class="h2">${childLevel ? (nodeLoc ? lvlPl(childLevel, R) : 'States, provinces and regions') : 'Village'} ${nodeLoc ? 'in ' + esc(nodeLoc.name) : ''}</h1><span class="muted">${kids.length} listed</span></div>
       ${canAdd ? `<form class="card row wrap-row" id="addloc">
         <label class="field grow"><span>New ${childLevel} name (English)</span><input id="ln" required></label>
         <label class="field grow"><span>नाम (हिंदी) · optional</span><input id="lh"></label>
         <button class="btn primary" type="submit">Add ${childLevel}</button></form>` : ''}
       ${!admin && childLevel && childLevel !== 'village' ? `<p class="muted small">Only the super admin can add ${LVL_PL[childLevel].toLowerCase()}. Coordinators can add missing villages once they open a panchayat.</p>` : ''}
-      ${kids.length ? `<ul class="chips">${kids.map(k => `<li><button data-n="${k.id}" ${childLevel === 'village' ? 'disabled' : ''}>${esc(k.name)}${k.name_hi ? ` <small>${esc(k.name_hi)}</small>` : ''}</button></li>`).join('')}</ul>`
+      ${kids.length && !nodeLoc ? REGIONS.map(g => { const list = kids.filter(k => (k.region || 'india') === g); return list.length ? `<h2 class="h3 chips-head">${esc(REGION[g])} <span class="muted small">· ${list.length}</span></h2><ul class="chips">${list.map(k =>
+        `<li><button data-n="${k.id}">${esc(k.name)}${k.name_hi ? ` <small>${esc(k.name_hi)}</small>` : ''}</button></li>`).join('')}</ul>` : ''; }).join('')
+      : kids.length ? `<ul class="chips">${kids.map(k => `<li><button data-n="${k.id}" ${childLevel === 'village' ? 'disabled' : ''}>${esc(k.name)}${k.name_hi ? ` <small>${esc(k.name_hi)}</small>` : ''}</button></li>`).join('')}</ul>`
         : `<div class="card empty"><p>${childLevel === 'village' ? 'No official village list here. Members type their village name on the form; add names here only if you want them fixed in the list.' : `Nothing listed here yet.${admin ? ' Add entries one by one above, or import the official LGD list (see README).' : ''}`}</p></div>`}
       ${pBooths.length ? `<section class="card"><h2 class="h3">Polling booths in ${esc(nodeLoc.name)} <span class="muted small">· ${esc(pBooths[0].assembly)} Vidhan Sabha · ${pBooths.length} booths</span></h2>
         <ul class="booth-list">${pBooths.map(b => `<li><b>${b.number}</b><span>${esc(b.name)}</span></li>`).join('')}</ul></section>` : ''}`;
@@ -879,7 +1021,7 @@
   async function viewCoordinators(root) {
     const list = await data.coordinators();
     await data.locations(list.map(c => c.location_id).filter(Boolean));
-    const area = async c => (c.location_id ? pathText((await data.locations([c.location_id]))[0]?.path || [], 'state') : 'All India');
+    const area = async c => (c.location_id ? pathText((await data.locations([c.location_id]))[0]?.path || [], 'state') : 'Everywhere');
     const areas = await Promise.all(list.map(area));
     const order = ['super_admin', 'state', 'district', 'block', 'panchayat'];
     const idx = list.map((c, i) => i).sort((a, b) => order.indexOf(list[a].role) - order.indexOf(list[b].role));
@@ -951,9 +1093,15 @@
     window.addEventListener('online', flushQueue);
     // phones may reopen the page from memory with an old choice still selected: start the form fresh
     window.addEventListener('pageshow', e => { if (e.persisted && current === 'register') go('register', { force: true }); });
+    window.addEventListener('hashchange', () => {
+      const r = { nri: 'abroad', abroad: 'abroad', nepal: 'nepal', india: 'india' }[location.hash.slice(1).toLowerCase()];
+      if (r && !me) go('register', { region: r });
+    });
     flushQueue();
-    const start = (location.hash || '').slice(1);
-    go(TABS.some(t => t.id === start) || start === 'login' ? start : 'register');
+    const start = (location.hash || '').slice(1).toLowerCase();
+    // shareable links: …/#nri opens the form on "Abroad", …/#nepal on Nepal
+    const startRegion = { nri: 'abroad', abroad: 'abroad', nepal: 'nepal' }[start];
+    go(TABS.some(t => t.id === start) || start === 'login' ? start : 'register', startRegion ? { region: startRegion } : {});
 
     if ('serviceWorker' in navigator && data.mode === 'live') {
       navigator.serviceWorker.register('sw.js').catch(() => { /* optional */ });

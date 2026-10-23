@@ -3,6 +3,9 @@
 --  Run this ONCE in Supabase → SQL Editor → New query → Run.
 --
 --  Hierarchy:  state → district → block → panchayat → village
+--  Regions:    india (states and UTs), nepal (provinces → districts →
+--              municipality → ward → village) and abroad (one "NRI / Abroad"
+--              entry whose "districts" are countries; state and city typed)
 --  Roles:      super_admin (you) → state → district → block → panchayat
 --  Rule:       a coordinator sees only members inside their own area.
 --              This is enforced by the database itself (Row Level
@@ -21,9 +24,12 @@ create table if not exists public.locations (
   lgd_code   text,                       -- official Local Government Directory code
   subdivision text,                      -- for blocks: the anumandal (e.g. Sherghati)
   expected_villages int,                 -- for panchayats: number of villages on record
+  region     text check (region in ('india','nepal','abroad')),  -- auto-filled from the state
   path       bigint[] not null default '{}',  -- ids of all ancestors + itself (auto-filled)
   created_at timestamptz not null default now()
 );
+
+alter table public.locations add column if not exists region text check (region in ('india','nepal','abroad'));
 
 create unique index if not exists locations_lgd_uq   on public.locations(level, lgd_code) where lgd_code is not null;
 create unique index if not exists locations_name_uq  on public.locations(coalesce(parent_id,0), level, lower(name));
@@ -34,7 +40,7 @@ create index        if not exists locations_path_gin on public.locations using g
 create or replace function public.locations_before_write() returns trigger
 language plpgsql as $$
 declare
-  p_level text; p_path bigint[];
+  p_level text; p_path bigint[]; p_region text;
   expected text := case new.level
     when 'district' then 'state' when 'block' then 'district'
     when 'panchayat' then 'block' when 'village' then 'panchayat' end;
@@ -43,13 +49,15 @@ begin
   if new.level = 'state' then
     if new.parent_id is not null then raise exception 'A state cannot have a parent'; end if;
     new.path := array[new.id];
+    new.region := coalesce(new.region, 'india');
   else
-    select level, path into p_level, p_path from public.locations where id = new.parent_id;
+    select level, path, region into p_level, p_path, p_region from public.locations where id = new.parent_id;
     if p_level is null then raise exception 'Parent location not found'; end if;
     if p_level <> expected then
       raise exception 'A % must be inside a %, not a %', new.level, expected, p_level;
     end if;
     new.path := p_path || new.id;
+    new.region := p_region;
   end if;
   return new;
 end $$;
@@ -58,6 +66,11 @@ drop trigger if exists trg_locations_before_write on public.locations;
 create trigger trg_locations_before_write
   before insert or update of parent_id, level, name on public.locations
   for each row execute function public.locations_before_write();
+
+-- for databases created before regions were added: everything so far is in India
+update public.locations set region = 'india' where level = 'state' and region is null;
+update public.locations l set region = s.region from public.locations s
+where s.id = l.path[1] and l.level <> 'state' and l.region is distinct from s.region;
 
 -- ---------------------------------------------------------------------
 -- 2. COORDINATORS  (who can log in, and which area they control)
@@ -136,13 +149,15 @@ create table if not exists public.members (
   guardian_name text,                                   -- father / husband
   gender        text check (gender in ('M','F','O')),
   age           int  check (age between 0 and 120),
-  phone         text not null,
+  phone         text not null,                          -- 10 digits for India, or +<country code><number>
   whatsapp      text,
   education     text,
-  occupation    text,
+  occupation    text,                                   -- profession
+  marital_status text check (marital_status in ('unmarried','married','widowed','divorced')),
   family_size   int  check (family_size between 1 and 100),
   address       text,                                   -- tola / mohalla / ward
   notes         text,
+  native_place  text,                                   -- for NRIs: home village / district in India or Nepal
   place_id      bigint not null references public.locations(id) on delete restrict,  -- deepest listed place (district, block, panchayat or village)
   block_name     text,                                  -- filled from the list, or typed where no block list exists
   panchayat_name text,                                  -- filled from the list, or typed where no panchayat list exists
@@ -171,11 +186,20 @@ alter table public.members add column if not exists panchayat_name text;
 alter table public.members add column if not exists booth_id bigint references public.booths(id) on delete set null;
 alter table public.members add column if not exists booth_no int;
 create index        if not exists members_booth_i       on public.members(booth_id);
+-- for databases created before marital status / NRI details were added
+alter table public.members add column if not exists marital_status text check (marital_status in ('unmarried','married','widowed','divorced'));
+alter table public.members add column if not exists native_place text;
 
+-- Indian numbers are kept as 10 digits; others as +<country code><number>
 create or replace function public.clean_phone(p text) returns text
 language sql immutable as $$
-  select case when p is null or btrim(p) = '' then null
-              else right(regexp_replace(p, '\D', '', 'g'), 10) end
+  select case
+    when p is null or btrim(p) = '' then null
+    when btrim(p) ~ '^(\+|00)' then
+      case when regexp_replace(regexp_replace(btrim(p), '^00', ''), '\D', '', 'g') ~ '^91[6-9][0-9]{9}$'
+           then right(regexp_replace(p, '\D', '', 'g'), 10)
+           else '+' || regexp_replace(regexp_replace(btrim(p), '^00', ''), '\D', '', 'g') end
+    else right(regexp_replace(p, '\D', '', 'g'), 10) end
 $$;
 
 create or replace function public.tidy_name(p text) returns text
@@ -183,17 +207,18 @@ language sql immutable as $$ select initcap(regexp_replace(btrim(coalesce(p, '')
 
 create or replace function public.members_before_write() returns trigger
 language plpgsql as $$
-declare v_level text; v_path bigint[]; v_name text; b_panch bigint;
+declare v_level text; v_path bigint[]; v_name text; v_region text; b_panch bigint;
 begin
   new.full_name := btrim(new.full_name);
   new.phone     := public.clean_phone(new.phone);
   new.whatsapp  := coalesce(public.clean_phone(new.whatsapp), new.phone);
-  if new.phone !~ '^[6-9][0-9]{9}$' then
-    raise exception 'Mobile number must be a valid 10-digit Indian number';
+  if new.phone is null or not (new.phone ~ '^[6-9][0-9]{9}$' or new.phone ~ '^\+[1-9][0-9]{7,14}$') then
+    raise exception 'Enter a valid mobile number: 10 digits in India, or with the country code (+977…, +971…)';
   end if;
-  select level, path, name into v_level, v_path, v_name from public.locations where id = new.place_id;
+  if new.marital_status = '' then new.marital_status := null; end if;
+  select level, path, name, region into v_level, v_path, v_name, v_region from public.locations where id = new.place_id;
   if v_level is null or v_level not in ('district','block','panchayat','village') then
-    raise exception 'Choose at least the district where the member lives';
+    raise exception 'Choose at least the district (or country) where the member lives';
   end if;
   -- where a list exists, the member must pick from it; typed names only below the last listed level
   if v_level in ('district','block') and exists (select 1 from public.locations c where c.parent_id = new.place_id) then
@@ -206,11 +231,27 @@ begin
   if v_level in ('panchayat','village') then
     select name into new.panchayat_name from public.locations where id = v_path[4];
   end if;
+  -- Nepal: a ward typed as "5" is stored as "Ward 5"
+  if v_region = 'nepal' and btrim(coalesce(new.panchayat_name, '')) ~ '^[0-9]+$' then
+    new.panchayat_name := 'Ward ' || btrim(new.panchayat_name);
+  end if;
   new.block_name     := public.tidy_name(new.block_name);
   new.panchayat_name := public.tidy_name(new.panchayat_name);
   new.village_name   := public.tidy_name(new.village_name);
-  if length(new.block_name) < 2 then raise exception 'Enter the block name'; end if;
-  if length(new.panchayat_name) < 2 then raise exception 'Enter the panchayat name'; end if;
+  -- abroad: place is the country; city is required, state / province and area are optional
+  if v_region = 'abroad' then
+    if length(new.panchayat_name) < 2 then raise exception 'Enter the city'; end if;
+    if length(new.block_name) < 2 then new.block_name := v_name; end if;
+    if length(new.village_name) < 2 then new.village_name := new.panchayat_name; end if;
+  else
+    new.native_place := null;
+  end if;
+  if length(new.block_name) < 2 then
+    raise exception '%', case v_region when 'nepal' then 'Enter the municipality / rural municipality' else 'Enter the block name' end;
+  end if;
+  if length(new.panchayat_name) < 2 then
+    raise exception '%', case v_region when 'nepal' then 'Enter the ward' else 'Enter the panchayat name' end;
+  end if;
   if length(new.village_name) < 2 then raise exception 'Enter the village name'; end if;
   new.location_path := v_path;
   if new.booth_id is not null then
@@ -329,11 +370,11 @@ create policy coord_write on public.coordinators for all to authenticated
 -- ---------------------------------------------------------------------
 drop function if exists public.member_counts(bigint);
 create or replace function public.member_counts(p_parent bigint)
-returns table(location_id bigint, name text, level text, subdivision text,
+returns table(location_id bigint, name text, level text, subdivision text, region text,
               total bigint, verified bigint, pending bigint,
               villages_reached bigint, expected_villages bigint)
 language sql stable security invoker set search_path = public as $$
-  select l.id, l.name, l.level, l.subdivision,
+  select l.id, l.name, l.level, l.subdivision, l.region,
          count(m.id),
          count(m.id) filter (where m.status = 'verified'),
          count(m.id) filter (where m.status = 'pending'),
@@ -343,7 +384,7 @@ language sql stable security invoker set search_path = public as $$
   from public.locations l
   left join public.members m on m.location_path @> array[l.id] and m.status <> 'rejected'
   where l.parent_id is not distinct from p_parent
-  group by l.id, l.name, l.level, l.subdivision
+  group by l.id, l.name, l.level, l.subdivision, l.region
   order by count(m.id) desc, l.name
 $$;
 
